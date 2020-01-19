@@ -79,29 +79,30 @@ class General(commands.Cog):
     @commands.guild_only()
     async def guild(self, ctx: commands.Context):
         """Guild information"""
-        embed = discord.Embed(color=self.bot.colors.neutral)
-
-        embed.set_author(name=f"{ctx.guild.name} ({ctx.guild.id})")
+        def_r = ctx.guild.default_role
+        embed = discord.Embed(color=self.bot.colors.neutral, title=f"{ctx.guild.name}")
         embed.set_thumbnail(url=ctx.guild.icon_url_as(static_format="png", size=1024))
-        embed.add_field(name="Owner", value=ctx.guild.owner.mention, inline=False)
-        embed.add_field(name="Region", value=ctx.guild.region)
-        embed.add_field(name="Created", value=self.bot.format_datetime(ctx.guild.created_at), inline=False)
-        embed.add_field(name=f"Channels ({self.number_of_channels(ctx.guild.channels)})",
-                        value=f"#️⃣: `{len(ctx.guild.text_channels)}`\n"
-                              f"🔈: `{len(ctx.guild.voice_channels)}`",
+        embed.add_field(name="__General:__", value=f"**ID:** {ctx.guild.id}\n"
+                                                   f"**Created:** {self.bot.format_datetime(ctx.guild.created_at)}\n"
+                                                   f"**Owner:** {ctx.guild.owner.mention}\n",
                         inline=False)
-        embed.add_field(name=f"Roles ({len(ctx.guild.roles)})",
-                        value=" | ".join([r.mention for r in ctx.guild.roles if r != ctx.guild.default_role]),
+        embed.add_field(name=f"__Roles__ {len(ctx.guild.roles)}",
+                        value=f"{' | '.join([r.mention for r in ctx.guild.roles if r != def_r])}",
                         inline=False)
+        number_of_bots = self.number_of_bots(ctx.guild.members)
+        embed.add_field(name=f"__Members__ {len(ctx.guild.members)}",
+                        value=f"**Members:** {len(ctx.guild.members) - number_of_bots}\n"
+                              f"**Bots:** {number_of_bots}\n"
+                              f"**Emojis:** {len(ctx.guild.emojis)}",
+                        inline=True)
+        embed.add_field(name=f"__Channels__ ({self.number_of_channels(ctx.guild.channels)})",
+                        value=f"**Text:** {len(ctx.guild.text_channels)}\n"
+                              f"**Voice:** {len(ctx.guild.voice_channels)}",
+                        inline=True)
         if ctx.guild.features:
-            embed.add_field(name="Features",
+            embed.add_field(name="__Features__",
                             value="\n".join([f.replace("_", " ").title() for f in ctx.guild.features]),
                             inline=False)
-        number_of_bots = self.number_of_bots(ctx.guild.members)
-        embed.add_field(name="Other",
-                        value=f"Members: `{len(ctx.guild.members) - number_of_bots}`\n"
-                              f"Bots: `{number_of_bots}`\nEmojis: `{len(ctx.guild.emojis)}`",
-                        inline=False)
 
         await ctx.send(embed=embed)
 

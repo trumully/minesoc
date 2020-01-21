@@ -35,6 +35,7 @@ class Music(commands.Cog):
 
     def cog_unload(self):
         self.bot.lavalink._event_hooks.clear()
+        self.spotify_queue.cancel()
 
     async def cog_before_invoke(self, ctx):
         guild_check = ctx.guild is not None
@@ -93,41 +94,56 @@ class Music(commands.Cog):
                 if uri.split(":")[1] == "user":
                     query_id = uri.split(":")[4]
                     results = sp.playlist_tracks(query_id)
+                    playlist = True
                 else:
                     query_id = uri.split(":")[2]
                     if uri.split(":")[1] == "track":
                         results = sp.track(query_id)
+                        playlist = False
                     elif uri.split(":")[1] == "playlist":
                         results = sp.playlist_tracks(query_id)
+                        playlist = True
 
-                tracks = results["items"]
-                while results["next"]:
-                    results = sp.next(results)
-                    tracks.extend(results["items"])
+                if playlist:
+                    tracks = results["items"]
+                    while results["next"]:
+                        results = sp.next(results)
+                        tracks.extend(results["items"])
 
-                async def spotify_queue():
-                    i = 0
-                    loop = True
-                    while loop:
-                        track = tracks[i]["track"]
-                        if not track:
-                            loop = False
-                        if not track["is_local"]:
-                            search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
-                            res = await player.node.get_tracks(search)
-                            if res["tracks"]:
-                                to_play = res["tracks"][0]
-                                if i == 0:
-                                    to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
-                                    await player.play(to_play)
-                                else:
-                                    player.add(requester=ctx.author.id, track=to_play)
-                            i += 1
+                    async def spotify_queue():
+                        i = 0
+                        loop = True
+                        while loop:
+                            track = tracks[i]["track"]
+                            if not track:
+                                loop = False
+                            if not track["is_local"]:
+                                search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
+                                res = await player.node.get_tracks(search)
+                                if res["tracks"]:
+                                    to_play = res["tracks"][0]
+                                    if i == 0:
+                                        to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
+                                        await player.play(to_play)
+                                    else:
+                                        player.add(requester=ctx.author.id, track=to_play)
+                                i += 1
 
-                self.spotify_queue = self.bot.loop.create_task(spotify_queue())
+                    self.spotify_queue = self.bot.loop.create_task(spotify_queue())
 
-                embed.title = "Playlist Enqueued!"
-                embed.description = f"[{results['name']}]({query}) - {len(tracks)} tracks"
+                    embed.title = "Playlist Enqueued!"
+                    embed.description = f"[{results['items']['name']}]({query}) - {len(tracks)} tracks"
+
+                else:
+                    track = results
+                    search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
+                    res = await player.node.get_tracks(search)
+                    if res["tracks"]:
+                        to_play = res["tracks"][0]
+                        player.add(requester=ctx.author.id, track=to_play)
+
+                    embed.title = "Track Enqueued!"
+                    embed.description = f"[{to_play['info']['title']}]({to_play['info']['uri']})"
 
             else:
                 if not re.match(url_rx, query):
@@ -190,7 +206,10 @@ class Music(commands.Cog):
 
         player.queue.clear()
         await player.stop()
-        self.spotify_queue.cancel()
+        try:
+            self.spotify_queue.cancel()
+        except AttributeError:
+            pass
         await ctx.send("⏹ | Stopped.")
 
     @commands.command(aliases=["np", "n", "playing"])

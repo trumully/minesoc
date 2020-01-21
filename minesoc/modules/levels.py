@@ -156,19 +156,6 @@ class Levels(commands.Cog):
             else:
                 await ctx.send("Member hasn't received xp yet.")
 
-        """if user:
-            user = dict(user)
-            embed = discord.Embed(color=member.color, timestamp=ctx.message.created_at)
-
-            embed.set_author(name=f"{member.display_name}", icon_url=member.avatar_url)
-
-            embed.add_field(name="Level", value=user["lvl"])
-            embed.add_field(name="XP", value=user["xp"])
-
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("Member does not have a level.")"""
-
     @commands.command(pass_context=True, aliases=["lb"])
     async def leaderboard(self, ctx):
         """
@@ -195,7 +182,7 @@ class Levels(commands.Cog):
                 rankings += f"#{idx + 1}\n"
                 user_name += f"**{user.name}**\n"
                 xp_to_next = round((4 * (val["lvl"] ** 3) / 5))
-                user_info += f"Level {val['lvl']} ({xp_to_next}/{val['xp']})\n"
+                user_info += f"Level {val['lvl']} ({val['xp']}/{xp_to_next})\n"
 
         embed = discord.Embed(color=ctx.guild.get_member(self.bot.user.id).colour, title=f"Top 10 in {ctx.guild.name}",
                               timestamp=ctx.message.created_at)

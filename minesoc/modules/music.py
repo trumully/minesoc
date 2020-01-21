@@ -4,15 +4,16 @@
 import discord
 import lavalink
 import re
-import math
+import asyncio
 import spotipy
+import math
 
-from discord.ext import commands
+from discord.ext import commands, tasks
 from libneko.aggregates import Proxy
 from dotenv import dotenv_values
 from pathlib import Path
 
-DIR = Path(__file__).parent
+DIR = Path(__file__).parent.parent
 ENV_DIR = DIR / ".env"
 
 env = Proxy(dotenv_values(dotenv_path=ENV_DIR))
@@ -78,39 +79,60 @@ class Music(commands.Cog):
             if "spotify" in query:
 
                 credentials = spotipy.SpotifyClientCredentials(client_id=str(env.SPOTIFY_CLIENT_ID),
-                                                               client_secret=str(env.SPOTIFY_CLIENT_SECRET), )
+                                                               client_secret=str(env.SPOTIFY_CLIENT_SECRET))
                 token = credentials.get_access_token()
-                spotify = spotipy.Spotify(auth=token)
+                sp = spotipy.Spotify(auth=token)
 
                 embed = discord.Embed(color=discord.Color.blurple())
 
-                uri = re.search("com/(.*)\\?si=", query).group(1)
-                uri = uri.replace("/", ":")
-                if "user" in uri:
-                    playlist_id = uri.split(":")[3]
+                uri = "spotify:"
+                res = re.search("com/(.*)\\?si=", query).group(1)
+                res = res.replace("/", ":")
+                uri += res
+
+                if uri.split(":")[1] == "user":
+                    query_id = uri.split(":")[4]
+                    results = sp.playlist_tracks(query_id)
                 else:
-                    playlist_id = uri.split(":")[1]
+                    query_id = uri.split(":")[2]
+                    if uri.split(":")[1] == "track":
+                        results = sp.track(query_id)
+                    elif uri.split(":")[1] == "playlist":
+                        results = sp.playlist_tracks(query_id)
 
-                res = spotify.playlist(playlist_id)
+                tracks = results["items"]
+                while results["next"]:
+                    results = sp.next(results)
+                    tracks.extend(results["items"])
 
-                tracks = res["tracks"]["items"]
+                async def spotify_queue():
+                    i = 0
+                    loop = True
+                    while loop:
+                        track = tracks[i]["track"]
+                        if not track:
+                            loop = False
+                        if not track["is_local"]:
+                            search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
+                            res = await player.node.get_tracks(search)
+                            if res["tracks"]:
+                                to_play = res["tracks"][0]
+                                if i == 0:
+                                    to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
+                                    await player.play(to_play)
+                                else:
+                                    player.add(requester=ctx.author.id, track=to_play)
+                            i += 1
 
-                items = {"name": res["name"],
-                         "tracks": [f"ytsearch:{tracks[i]['track']['artists'][0]['name']} {tracks[i]['track']['name']}"
-                                    if not tracks[i]["is_local"] else "" for i in range(len(tracks))]}
-
-                for item in items["tracks"]:
-
-                    results = await player.node.get_tracks(item)
-
-                    if results or results["tracks"]:
-                        track = results["tracks"][0]
-                        player.add(requester=ctx.author.id, track=track)
+                self.spotify_queue = self.bot.loop.create_task(spotify_queue())
 
                 embed.title = "Playlist Enqueued!"
-                embed.description = f"[{items['name']}]({query}) - {len(tracks)} tracks"
+                embed.description = f"[{results['name']}]({query}) - {len(tracks)} tracks"
 
             else:
+                if not re.match(url_rx, query):
+                    query = f"ytsearch:{query}"
+
                 results = await player.node.get_tracks(query)
 
                 if not results or not results["tracks"]:
@@ -168,6 +190,7 @@ class Music(commands.Cog):
 
         player.queue.clear()
         await player.stop()
+        self.spotify_queue.cancel()
         await ctx.send("⏹ | Stopped.")
 
     @commands.command(aliases=["np", "n", "playing"])
@@ -307,7 +330,7 @@ class Music(commands.Cog):
             return await ctx.send("Not connected.")
 
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
-            return await ctx.send("You\"re not in my voicechannel!")
+            return await ctx.send("You're not in my voicechannel!")
 
         player.queue.clear()
         await player.stop()

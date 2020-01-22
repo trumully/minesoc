@@ -14,22 +14,24 @@ from traceback import format_exc
 from datetime import datetime
 from pathlib import Path
 from libneko.aggregates import Proxy
-from .utils import logger, emojis, errors, context, config
+from .utils import logger, emojis, errors, context, config, api
 
 
-DIR = Path(__file__).parent
-ENV_DIR = DIR / ".env"
+ENV_DIR = Path(__file__).parent / ".env"
 
 
 class Minesoc(Bot):
     def __init__(self, **kwargs):
         self.config = Proxy(dotenv_values(dotenv_path=ENV_DIR))
-        super().__init__(command_prefix=self.config.PREFIX, description="WIP", owner_id=int(self.config.OWNER_ID),
+        super().__init__(command_prefix=self.config.PREFIX, description="General purpose bot. WIP",
+                         owner_id=int(self.config.OWNER_ID),
                          **kwargs)
 
         self.loop = asyncio.get_event_loop()
         self.session = aiohttp.ClientSession()
         self.start_time = datetime.now()
+
+        self.api = api.API(self)
 
         self.logger = logger.CustomLogger(name="minesoc",
                                           handler=logger.DiscordHandler(webhook_url=self.config.WEBHOOK_URL),

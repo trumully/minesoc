@@ -2,6 +2,7 @@ import discord
 
 from discord.ext import commands
 from datetime import datetime
+from minesoc.utils import emojis
 
 
 class Owner(commands.Cog):
@@ -60,6 +61,16 @@ class Owner(commands.Cog):
         """Stops the bot, should restart it"""
         await ctx.message.add_reaction("👌")
         await self.bot.logout()
+
+    @commands.command()
+    async def emojirefresh(self, ctx):
+        _emojis = emojis.CustomEmojis()
+        try:
+            _emojis.fetch_emojis(self.bot.dev_guild)
+            _emojis.reinit()
+        except Exception as err:
+            await ctx.send(err)
+
 
 
 def setup(bot):

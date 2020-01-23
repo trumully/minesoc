@@ -80,24 +80,31 @@ class General(commands.Cog):
     async def guild(self, ctx: commands.Context):
         """Guild information"""
         def_r = ctx.guild.default_role
+        num_online = sum(member.status == discord.Status.online and not member.bot for member in ctx.guild.members)
+        num_offline = sum(member.status == discord.Status.offline and not member.bot for member in ctx.guild.members)
+        num_dnd = sum(member.status == discord.Status.dnd and not member.bot for member in ctx.guild.members)
+        num_idle = sum(member.status == discord.Status.idle and not member.bot for member in ctx.guild.members)
+
         embed = discord.Embed(color=self.bot.colors.neutral, title=f"{ctx.guild.name}")
         embed.set_thumbnail(url=ctx.guild.icon_url_as(static_format="png", size=1024))
-        embed.add_field(name="__General:__", value=f"**ID:** {ctx.guild.id}\n"
-                                                   f"**Created:** {self.bot.format_datetime(ctx.guild.created_at)}\n"
-                                                   f"**Owner:** {ctx.guild.owner.mention}\n",
+        embed.add_field(name="General", value=f"**ID:** {ctx.guild.id}\n"
+                                              f"**Created:** {self.bot.format_datetime(ctx.guild.created_at)}\n"
+                                              f"**Owner:** {ctx.guild.owner.mention}\n",
                         inline=False)
-        embed.add_field(name=f"__Roles__ {len(ctx.guild.roles)}",
+        embed.add_field(name=f"Roles `{len(ctx.guild.roles)}`",
                         value=f"{' | '.join([r.mention for r in ctx.guild.roles if r != def_r])}",
                         inline=False)
         number_of_bots = self.number_of_bots(ctx.guild.members)
-        embed.add_field(name=f"__Members__ {len(ctx.guild.members)}",
-                        value=f"**Members:** {len(ctx.guild.members) - number_of_bots}\n"
-                              f"**Bots:** {number_of_bots}\n"
-                              f"**Emojis:** {len(ctx.guild.emojis)}",
+        embed.add_field(name=f"Members `{len(ctx.guild.members)}`",
+                        value=f"{self.bot.emojis.status_online} **{num_online}** online\n"
+                              f"{self.bot.emojis.status_dnd} **{num_dnd}** dnd\n"
+                              f"{self.bot.emojis.status_idle} **{num_idle}** idle\n"
+                              f"{self.bot.emojis.status_offline} **{num_offline}** online\n"
+                              f"{self.bot.emojis.bot} **{number_of_bots}** bots",
                         inline=True)
-        embed.add_field(name=f"__Channels__ ({self.number_of_channels(ctx.guild.channels)})",
-                        value=f"**Text:** {len(ctx.guild.text_channels)}\n"
-                              f"**Voice:** {len(ctx.guild.voice_channels)}",
+        embed.add_field(name=f"Channels ({self.number_of_channels(ctx.guild.channels)})",
+                        value=f"{self.bot.emojis.text} {len(ctx.guild.text_channels)}\n"
+                              f"{self.bot.emojis.voice} {len(ctx.guild.voice_channels)}",
                         inline=True)
         if ctx.guild.features:
             embed.add_field(name="__Features__",

@@ -6,8 +6,9 @@ import aiohttp
 import aiosqlite
 import json
 
+from itertools import cycle
 from dotenv import dotenv_values
-from discord.ext.commands import Bot, when_mentioned_or
+from discord.ext.commands import Bot
 from discord.ext import tasks
 from os import listdir
 from traceback import format_exc
@@ -66,8 +67,6 @@ class Minesoc(Bot):
         self.dev_guild = self.get_guild(int(self.config.DEV_GUILD))
         self._emojis.fetch_emojis(self.dev_guild)
         self._owner = self.get_user(self.owner_id)
-        await self.change_presence(activity=discord.Game(f"m!help | {len(self.guilds)} servers"))
-
         self.logger.info(f"I'm ready! Logged in as: {self.user} ({self.user.id})")
 
     def get_owner(self):

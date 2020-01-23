@@ -51,13 +51,19 @@ class DeviantArt:
         self.session = session
         self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
         self.access_token = self.da.access_token
-        self.base_url ="https://www.deviantart.com/api/v1/oauth2/"
+        self.base_url = "https://www.deviantart.com/api/v1/oauth2/"
 
     async def browse_tags(self, tags: str):
         tags = tags.lower()
         async with self.session.get(
                 self.base_url + f"browse/tags?tag={tags}&limit=50&access_token={self.access_token}") as r:
-            return self.DeviantArtResponse(response=await r.json())
+            if r.status != "error":
+                return self.DeviantArtResponse(response=await r.json())
+            else:
+                embed = discord.Embed(color=discord.Color.red())
+                embed.title = "An unexpected error has occurred!"
+                embed.description = f"Tell the owner '{r.error}: {r.error_description}'"
+                return embed
 
     async def browse_popular(self, query, category):
         url = self.base_url + "browse/popular?"
@@ -69,5 +75,11 @@ class DeviantArt:
             url += f"q={query}&"
         url += f"timerange=1week&limit=50&access_token={self.access_token}"
         async with self.session.get(url) as r:
-            return self.DeviantArtResponse(response=await r.json())
+            if r.status != "error":
+                return self.DeviantArtResponse(response=await r.json())
+            else:
+                embed = discord.Embed(color=discord.Color.red())
+                embed.title = "An unexpected error has occurred!"
+                embed.description = f"Tell the owner '{r.error}: {r.error_description}'"
+                return embed
 

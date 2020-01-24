@@ -64,13 +64,11 @@ class Levels(commands.Cog):
     def cog_unload(self):
         self.create_table.stop()
 
-    async def lvl_up(self, user, ctx):
+    def lvl_up(self, user):
         cur_xp = user['xp']
         cur_lvl = user['lvl']
 
         if cur_xp >= round((4 * (cur_lvl ** 3) / 5)):  # lvl 1: 1 xp, lvl 2: 2 xp, lvl 3: 26xp
-            await ctx.send(
-                f"🆙 | **{self.bot.get_user(user['user_id']).name}** leveled up to **Level {user['lvl'] + 1}**!")
             return True
         else:
             return False
@@ -84,6 +82,11 @@ class Levels(commands.Cog):
                                 xp integer,
                                 lvl integer,
                                 cd real
+                                )""")
+            await db.commit()
+            await db.execute("""CREATE TABLE IF NOT EXISTS config(
+                                guild_id integer,
+                                level_msg integer
                                 )""")
             await db.commit()
 
@@ -105,6 +108,20 @@ class Levels(commands.Cog):
 
             async with aiosqlite.connect("level_system.db") as db:
                 db.row_factory = aiosqlite.Row
+                async with db.execute("SELECT level_msg FROM config WHERE guild_id=:guild", {"guild": guild_id}) as cur:
+                    level_config = await cur.fetchone()
+                    if not level_config:
+                        await db.execute("INSERT INTO config VALUES (:guild, :lvl_msg)",
+                                         {"guild": guild_id, "lvl_msg": 0})
+                        await db.commit()
+                        do_lvl = True
+                    else:
+                        if level_config["level_msg"] == 0:
+                            do_lvl = True
+                        else:
+                            do_lvl = False
+
+                db.row_factory = aiosqlite.Row
                 async with db.execute("SELECT user_id, guild_id, xp, lvl, cd FROM users "
                                       "WHERE user_id=:user AND guild_id=:guild",
                                       {"user": author_id, "guild": guild_id}) as cur:
@@ -125,10 +142,13 @@ class Levels(commands.Cog):
                                                "cd": time.time()})
                             await db.commit()
 
-                        if await self.lvl_up(member, ctx):
-                            await cur.execute("UPDATE users SET lvl=:lvl WHERE user_id=:u_id AND guild_id=:g_id",
-                                              {"lvl": member["lvl"] + 1, "u_id": author_id, "g_id": guild_id})
-                            await db.commit()
+                    if self.lvl_up(member):
+                        await cur.execute("UPDATE users SET lvl=:lvl WHERE user_id=:u_id AND guild_id=:g_id",
+                                          {"lvl": member["lvl"] + 1, "u_id": author_id, "g_id": guild_id})
+                        await db.commit()
+                        if do_lvl:
+                            await ctx.send(f"🆙 | **{self.bot.get_user(member['user_id']).name}** "
+                                           f"leveled up to **Level {member['lvl'] + 1}**!")
 
     # Commands
     @commands.command(pass_context=True, aliases=["lvl", "lev"])
@@ -186,7 +206,6 @@ class Levels(commands.Cog):
             for idx, val in zip(range(10), users_list):
                 user = self.bot.get_user(val["user_id"])
                 if user:
-                    print(user)
                     rankings += f"#{idx + 1}\n"
                     user_name += f"**{user.name}**\n"
                     xp_to_next = round((4 * (val["lvl"] ** 3) / 5))
@@ -198,6 +217,35 @@ class Levels(commands.Cog):
             embed.add_field(name="Rank", value=rankings, inline=True)
             embed.add_field(name="User", value=user_name, inline=True)
             embed.add_field(name="Level", value=user_info, inline=True)
+
+            await ctx.send(embed=embed)
+
+    # TODO: Merge command into a config/moderator cog.
+    @commands.command(pass_context=True)
+    @commands.has_permissions(manage_guild=True)
+    async def lvlmsg(self, ctx):
+        guild_check = ctx.guild is not None
+        guild = str(ctx.guild.id)
+        if guild_check:
+            embed = discord.Embed(color=discord.Color.blue())
+            async with aiosqlite.connect("level_system.db") as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("SELECT level_msg FROM config WHERE guild_id=:guild", {"guild": guild}) as cur:
+                    level_config = await cur.fetchone()
+                    if not level_config:
+                        await db.execute("INSERT INTO config VALUES (:guild, :lvl_msg)",
+                                         {"guild": guild, "lvl_msg": 0})
+                        await db.commit()
+                        embed.title = "Level Up Messages: DISABLED"
+                    else:
+                        if level_config["level_msg"] == 1:
+                            await cur.execute("UPDATE config SET level_msg=0 WHERE guild_id=:guild", {"guild": guild})
+                            await db.commit()
+                            embed.title = "Level Up Messages: DISABLED"
+                        else:
+                            await cur.execute("UPDATE config SET level_msg=1 WHERE guild_id=:guild", {"guild": guild})
+                            await db.commit()
+                            embed.title = "Level Up Messages: ENABLED"
 
             await ctx.send(embed=embed)
 

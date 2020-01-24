@@ -96,13 +96,13 @@ class General(commands.Cog):
                         inline=False)
         number_of_bots = self.number_of_bots(ctx.guild.members)
         embed.add_field(name=f"Members `{len(ctx.guild.members)}`",
-                        value=f"{self.bot.emojis.status_online} **{num_online}** online\n"
-                              f"{self.bot.emojis.status_dnd} **{num_dnd}** dnd\n"
-                              f"{self.bot.emojis.status_idle} **{num_idle}** idle\n"
-                              f"{self.bot.emojis.status_offline} **{num_offline}** online\n"
-                              f"{self.bot.emojis.bot} **{number_of_bots}** bots",
+                        value=f"{self.bot.emojis.status_online} **{num_online}** Online\n"
+                              f"{self.bot.emojis.status_dnd} **{num_dnd}** DnD\n"
+                              f"{self.bot.emojis.status_idle} **{num_idle}** Idle\n"
+                              f"{self.bot.emojis.status_offline} **{num_offline}** Offline\n"
+                              f"{self.bot.emojis.bot} **{number_of_bots}** Bots",
                         inline=True)
-        embed.add_field(name=f"Channels ({self.number_of_channels(ctx.guild.channels)})",
+        embed.add_field(name=f"Channels `{self.number_of_channels(ctx.guild.channels)}`",
                         value=f"{self.bot.emojis.text} {len(ctx.guild.text_channels)}\n"
                               f"{self.bot.emojis.voice} {len(ctx.guild.voice_channels)}",
                         inline=True)

@@ -193,7 +193,10 @@ class Music(commands.Cog):
                     player.add(requester=ctx.author.id, track=track)
 
         await ctx.send(embed=embed)
-        self.spotify_queue = self.bot.loop.create_task(spotify_queue())
+        try:
+            self.spotify_queue = self.bot.loop.create_task(spotify_queue())
+        except:
+            pass
 
         if not player.is_playing:
             await player.play()
@@ -382,18 +385,6 @@ class Music(commands.Cog):
             pass
         await self.connect_to(ctx.guild.id, None)
         await ctx.send("*⃣ | Disconnected.")
-
-    @commands.command(aliases=["j", "join", "conn", "connect"])
-    async def summon(self, ctx):
-        player = self.bot.lavalink.players.get(ctx.guild.id)
-
-        player.store("channel", ctx.channel.id)
-
-        if not player.is_connected:
-            await self.connect_to(ctx.guild.id, str(ctx.author.voice.channel.id))
-        else:
-            if int(player.channel_id) != ctx.author.voice.channel.id:
-                await self.connect_to(ctx.guild.id, str(ctx.author.voice.channel.id))
 
     async def ensure_voice(self, ctx):
         """ This check ensures that the bot and command author are in the same voicechannel. """

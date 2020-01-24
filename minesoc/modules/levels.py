@@ -7,7 +7,7 @@ import time
 import aiohttp.client
 
 from random import randint
-from discord.ext import commands
+from discord.ext import commands, tasks
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
@@ -59,8 +59,10 @@ class Levels(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.create_table.start()
 
-        self.bot.loop.create_task(self.create_table())
+    def cog_unload(self):
+        self.create_table.stop()
 
     async def lvl_up(self, user, ctx):
         cur_xp = user['xp']
@@ -73,56 +75,60 @@ class Levels(commands.Cog):
         else:
             return False
 
+    @tasks.loop(seconds=60, count=1)
     async def create_table(self):
-        await self.bot.wait_until_ready()
-
-        async with aiosqlite.connect('level_system.db') as db:
-            await db.execute('''CREATE TABLE IF NOT EXISTS users(
+        async with aiosqlite.connect("level_system.db") as db:
+            await db.execute("""CREATE TABLE IF NOT EXISTS users(
                                 user_id integer,
                                 guild_id integer,
                                 xp integer,
                                 lvl integer,
                                 cd real
-                                )''')
+                                )""")
             await db.commit()
+
+    @create_table.before_loop
+    async def create_table_before_loop(self):
+        await self.bot.wait_until_ready()
 
     @commands.Cog.listener()
     async def on_message(self, message):
         ctx = await self.bot.get_context(message)
+        guild_check = ctx.guild is not None
 
         if message.author.bot or ctx.valid:
             return
 
-        else:
+        elif guild_check:
             author_id = str(message.author.id)
             guild_id = str(message.guild.id)
 
-            db = await aiosqlite.connect("level_system.db")
-            db.row_factory = aiosqlite.Row
-            cursor = await db.execute("SELECT user_id, guild_id, xp, lvl, cd FROM users "
-                                      "WHERE user_id=:u_id AND guild_id=:g_id", {"u_id": author_id, "g_id": guild_id})
-            user = await cursor.fetchone()
-
-            if not user:
+            async with aiosqlite.connect("level_system.db") as db:
                 db.row_factory = aiosqlite.Row
-                await db.execute("INSERT INTO users VALUES (:u_id, :g_id, :xp, :lvl, :cd)",
-                                 {"u_id": author_id, "g_id": guild_id, "xp": 0, "lvl": 1, "cd": time.time()})
-                await db.commit()
-                user = await cursor.fetchone()
+                async with db.execute("SELECT user_id, guild_id, xp, lvl, cd FROM users "
+                                      "WHERE user_id=:user AND guild_id=:guild",
+                                      {"user": author_id, "guild": guild_id}) as cur:
+                    member = await cur.fetchone()
 
-            xp_gain = randint(1, 7)
-            new_xp = user["xp"] + xp_gain
+                    xp_gain = randint(1, 7)
 
-            time_diff = time.time() - user["cd"]
-            if time_diff >= 120:
-                await cursor.execute("UPDATE users SET xp=:xp, cd=:cd WHERE user_id=:u_id AND guild_id=:g_id",
-                                     {"xp": new_xp, "u_id": author_id, "g_id": guild_id, "cd": time.time()})
-                await db.commit()
+                    if not member:
+                        await db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd)",
+                                         {"user": author_id, "guild": guild_id, "xp": xp_gain, "lvl": 1,
+                                          "cd": time.time()})
+                        await db.commit()
+                    else:
+                        time_diff = time.time() - member["cd"]
+                        if time_diff >= 120:
+                            await cur.execute("UPDATE users SET xp=:xp, cd=:cd WHERE user_id=:user AND guild_id=:guild",
+                                              {"xp": member["xp"] + xp_gain, "user": author_id, "guild": guild_id,
+                                               "cd": time.time()})
+                            await db.commit()
 
-            if await self.lvl_up(user, ctx):
-                await cursor.execute("UPDATE users SET lvl=:lvl WHERE user_id=:u_id AND guild_id=:g_id",
-                                     {"lvl": user["lvl"] + 1, "u_id": author_id, "g_id": guild_id})
-                await db.commit()
+                        if await self.lvl_up(member, ctx):
+                            await cur.execute("UPDATE users SET lvl=:lvl WHERE user_id=:u_id AND guild_id=:g_id",
+                                              {"lvl": member["lvl"] + 1, "u_id": author_id, "g_id": guild_id})
+                            await db.commit()
 
     # Commands
     @commands.command(pass_context=True, aliases=["lvl", "lev"])
@@ -159,38 +165,41 @@ class Levels(commands.Cog):
     @commands.command(pass_context=True, aliases=["lb"])
     async def leaderboard(self, ctx):
         """
-        Shows the top 10 users on the server.
+        Shows the top 10 users of your guild.
         """
-        guild_id = str(ctx.guild.id)
+        guild_check = ctx.guild is not None
+        if guild_check:
+            guild_id = str(ctx.guild.id)
 
-        async with aiosqlite.connect("level_system.db") as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT user_id, guild_id, xp, lvl "
-                                  "FROM users WHERE guild_id=:g_id ORDER BY lvl DESC",
-                                  {"g_id": guild_id}) as cursor:
-                users = await cursor.fetchall()
+            async with aiosqlite.connect("level_system.db") as db:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("SELECT user_id, guild_id, xp, lvl "
+                                      "FROM users WHERE guild_id=:guild ORDER BY lvl DESC",
+                                      {"guild": guild_id}) as cursor:
+                    users = await cursor.fetchall()
 
-        users_list = [dict(row) for row in users if not None]
+            users_list = [dict(row) for row in users if not None]
 
-        user_info = ""
-        user_name = ""
-        rankings = ""
-        for idx, val in zip(range(10), users_list):
-            user = self.bot.get_user(val["user_id"])
-            if user:
-                print(user)
-                rankings += f"#{idx + 1}\n"
-                user_name += f"**{user.name}**\n"
-                xp_to_next = round((4 * (val["lvl"] ** 3) / 5))
-                user_info += f"Level {val['lvl']} ({val['xp']}/{xp_to_next})\n"
+            user_info = ""
+            user_name = ""
+            rankings = ""
+            for idx, val in zip(range(10), users_list):
+                user = self.bot.get_user(val["user_id"])
+                if user:
+                    print(user)
+                    rankings += f"#{idx + 1}\n"
+                    user_name += f"**{user.name}**\n"
+                    xp_to_next = round((4 * (val["lvl"] ** 3) / 5))
+                    user_info += f"Level {val['lvl']} ({val['xp']}/{xp_to_next})\n"
 
-        embed = discord.Embed(color=ctx.guild.get_member(self.bot.user.id).colour, title=f"Top 10 in {ctx.guild.name}",
-                              timestamp=ctx.message.created_at)
-        embed.add_field(name="Rank", value=rankings, inline=True)
-        embed.add_field(name="User", value=user_name, inline=True)
-        embed.add_field(name="Level", value=user_info, inline=True)
+            embed = discord.Embed(color=ctx.guild.get_member(self.bot.user.id).colour,
+                                  title=f"Top 10 in {ctx.guild.name}",
+                                  timestamp=ctx.message.created_at)
+            embed.add_field(name="Rank", value=rankings, inline=True)
+            embed.add_field(name="User", value=user_name, inline=True)
+            embed.add_field(name="Level", value=user_info, inline=True)
 
-        await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
 
 
 def setup(bot):

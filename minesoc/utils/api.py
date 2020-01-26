@@ -74,10 +74,11 @@ class DeviantArt:
                 return self.DeviantArtResponse(response=await r.json())
             else:
                 response = await r.json()
-                error = f"{response['error']}: {response['error_description']}"
                 if response["error"] == "invalid_token":
                     self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
                     self.access_token = self.da.access_token
+
+                error = f"{response['error']}: {response['error_description']}"
                 embed = discord.Embed(color=discord.Color.red(), title="An error has occurred!",
                                       description=f"Error {r.status}\n`{error}`")
 
@@ -97,10 +98,11 @@ class DeviantArt:
                 return self.DeviantArtResponse(response=await r.json())
             else:
                 response = await r.json()
-                error = f"{response['error']}: {response['error_description']}"
                 if response["error"] == "invalid_token":
                     self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
                     self.access_token = self.da.access_token
+
+                error = f"{response['error']}: {response['error_description']}"
                 embed = discord.Embed(color=discord.Color.red(), title="An error has occurred!",
                                       description=f"Error {r.status}\n`{error}`")
 

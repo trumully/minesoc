@@ -6,16 +6,15 @@ import aiohttp
 import aiosqlite
 import json
 
-from itertools import cycle
 from dotenv import dotenv_values
+from discord.ext import commands
 from discord.ext.commands import Bot
-from discord.ext import tasks
 from os import listdir
 from traceback import format_exc
 from datetime import datetime
 from pathlib import Path
 from libneko.aggregates import Proxy
-from .utils import logger, emojis, errors, context, config, api
+from minesoc.utils import logger, emojis, context, config, api, errors
 
 
 ENV_DIR = Path(__file__).parent / ".env"
@@ -49,8 +48,46 @@ class Minesoc(Bot):
         self.load_modules()
         await self._start()
 
+    async def close(self):
+        try:
+            await self._connection.close()
+            await self.session.close()
+        finally:
+            await super().close()
+
     async def _start(self):
         await super().start(self.config.TOKEN)
+
+    async def get_prefix(self, message):
+        with open("prefixes.json", "r") as f:
+            prefixes = json.load(f)
+
+        try:
+            return prefixes[str(message.guild.id)]
+        except KeyError:
+            prefixes[str(message.guild.id)] = self.config.PREFIX
+
+        return prefixes[str(message.guild.id)]
+
+    async def on_message(self, message):
+        ctx = await self.get_context(message)
+
+        with open("config.json", "r") as f:
+            response = json.load(f)
+
+        try:
+            data = response[str(ctx.guild.id)]
+        except KeyError:
+            response[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
+            data = response[str(ctx.guild.id)]
+
+        disabled_commands = data["disabled_commands"]
+
+        if ctx.valid:
+            if ctx.command.name in disabled_commands:
+                raise commands.DisabledCommand(message="Tried to invoke disabled command")
+            else:
+                await self.process_commands(message)
 
     def load_modules(self):
         for module in listdir(f"minesoc/{self.config.MODULES_PATH}"):

@@ -106,3 +106,6 @@ venv.bak/
 # Other
 lavalink-logs/
 Lavalink.jar
+config.json
+prefixes.json
+

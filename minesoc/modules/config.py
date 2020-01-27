@@ -2,6 +2,9 @@ import discord
 import json
 
 from discord.ext import commands
+from minesoc.utils import config
+
+blacklist = ["Help", "Config", "Listeners"]
 
 
 class Config(commands.Cog):
@@ -10,9 +13,10 @@ class Config(commands.Cog):
         self.cog_dict = {}
         for cog in self.bot.cogs:
             cog = self.bot.get_cog(cog)
-            _commands = cog.get_commands()
             cog_name = cog.qualified_name
-            self.cog_dict[f"{cog_name}"] = [c.name for c in _commands]
+            if cog_name not in blacklist:
+                _commands = cog.get_commands()
+                self.cog_dict[f"{cog_name}"] = [c.name for c in _commands]
 
     @commands.group()
     @commands.has_permissions(manage_guild=True)
@@ -39,13 +43,13 @@ class Config(commands.Cog):
             return await ctx.send("Could not find that cog/command.")
         else:
             with open("config.json", "r") as f:
-                config = json.load(f)
+                res = json.load(f)
 
             try:
-                data = config[str(ctx.guild.id)]
+                data = res[str(ctx.guild.id)]
             except KeyError:
-                config[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-                data = config[str(ctx.guild.id)]
+                res[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
+                data = res[str(ctx.guild.id)]
 
             embed = discord.Embed(color=discord.Color.green())
 
@@ -53,24 +57,27 @@ class Config(commands.Cog):
                 title = "Enabled the X cog."
                 error = "X cog is already enabled!"
                 enabled = [c for c in self.cog_dict[to_enable.title()]]
-                print(enabled)
             else:
                 title = "Enabled the X command."
                 error = "X command is already enabled!"
                 enabled = [to_enable.lower()]
 
+            any_enabled = None
             for i in enabled:
                 if i in data["disabled_commands"]:
                     data["disabled_commands"].remove(i)
+                    any_enabled = True
             if to_enable == "Levels":
                 data["lvl_msg"] = True
                 data["lvl_system"] = True
-                embed.title = title.replace("X", to_enable)
+
+            if any_enabled:
+                embed.title = title.replace("X", f"`{to_enable}`")
             else:
-                embed.title = error.replace("X", to_enable)
+                embed.title = error.replace("X", f"`{to_enable}`")
 
             with open("config.json", "w") as f:
-                json.dump(config, f, indent=4)
+                json.dump(res, f, indent=4)
 
             await ctx.send(embed=embed)
 
@@ -93,13 +100,13 @@ class Config(commands.Cog):
             return await ctx.send("Could not find that cog/command.")
         else:
             with open("config.json", "r") as f:
-                config = json.load(f)
+                res = json.load(f)
 
             try:
-                data = config[str(ctx.guild.id)]
+                data = res[str(ctx.guild.id)]
             except KeyError:
-                config[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-                data = config[str(ctx.guild.id)]
+                res[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
+                data = res[str(ctx.guild.id)]
 
             embed = discord.Embed(color=discord.Color.red())
 
@@ -107,56 +114,54 @@ class Config(commands.Cog):
                 title = "Disabled the X cog."
                 error = "X cog is already disabled!"
                 disabled = [c for c in self.cog_dict[to_disable.title()]]
-                print(disabled)
             else:
                 title = "Disabled the X command."
                 error = "X command is already disabled!"
                 disabled = [to_disable.lower()]
 
+            any_disabled = False
             for i in disabled:
                 if i not in data["disabled_commands"]:
                     data["disabled_commands"].append(i)
+                    any_disabled = True
             if to_disable == "Levels":
                 data["lvl_msg"] = False
                 data["lvl_system"] = False
 
-                embed.title = title.replace("X", to_disable)
+            if any_disabled:
+                embed.title = title.replace("X", f"`{to_disable}`")
             else:
-                embed.title = error.replace("X", to_disable)
+                embed.title = error.replace("X", f"`{to_disable}`")
 
             with open("config.json", "w") as f:
-                json.dump(config, f, indent=4)
+                json.dump(res, f, indent=4)
 
             await ctx.send(embed=embed)
 
     @config.command()
     async def lvl_msg(self, ctx):
         with open("config.json", "r") as f:
-            config = json.load(f)
+            res = json.load(f)
 
         try:
-            data = config[str(ctx.guild.id)]
+            data = res[str(ctx.guild.id)]
         except KeyError:
-            config[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-            data = config[str(ctx.guild.id)]
+            res[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
+            data = res[str(ctx.guild.id)]
+
+        data["lvl_msg"] = not data["lvl_msg"]
 
         embed = discord.Embed()
 
-        if data["lvl_msg"]:
-            data["lvl_msg"] = False
-            embed.colour = discord.Color.red()
-            embed.title = "Level up message disabled"
-        else:
-            data["lvl_msg"] = True
-            embed.colour = discord.Color.green()
-            embed.title = "Level up message enabled"
+        embed.title = "Level up message disabled" if not data["lvl_msg"] else "Level up message enabled"
+        embed.colour = discord.Color.red() if not data["lvl_msg"] else discord.Color.green()
 
         with open("config.json", "w") as f:
-            json.dump(config, f, indent=4)
+            json.dump(res, f, indent=4)
 
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(name="prefix")
     @commands.has_permissions(manage_guild=True)
     async def changeprefix(self, ctx, prefix: str):
         embed = discord.Embed()

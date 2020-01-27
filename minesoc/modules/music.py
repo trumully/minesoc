@@ -1,14 +1,14 @@
-# music-pylava.py
+# music.py
 # Uses an alternative library for playing music
 
 import discord
 import lavalink
 import re
-import asyncio
 import spotipy
 import math
+import asyncio
 
-from discord.ext import commands, tasks
+from discord.ext import commands
 from libneko.aggregates import Proxy
 from dotenv import dotenv_values
 from pathlib import Path
@@ -64,6 +64,13 @@ class Music(commands.Cog, name="Music"):
             guild_id = int(event.player.guild_id)
             await self.connect_to(guild_id, None)
             # Disconnect from the channel -- there's nothing else to play.
+        if isinstance(event, lavalink.events.TrackStartEvent):
+            player = event.player
+            context = player.fetch("ctx")
+            embed = player.fetch("embed")
+            message = await context.send(embed=embed)
+            await asyncio.sleep(5)
+            await message.delete()
 
     async def connect_to(self, guild_id: int, channel_id: str):
         """ Connects to the given voice channel ID. A channel_id of `None` means disconnect. """
@@ -78,6 +85,8 @@ class Music(commands.Cog, name="Music"):
         player = self.bot.lavalink.players.get(ctx.guild.id)
 
         query = query.strip("<>")
+
+        message = ctx.message
 
         async with ctx.typing():
             if "spotify" in query:
@@ -168,7 +177,7 @@ class Music(commands.Cog, name="Music"):
                     embed.description = f"[{to_play['info']['title']}]({to_play['info']['uri']})"
 
             else:
-                if not re.match(url_rx, query):
+                if not re.match(url_rx, query) or not query.startswith("ytsearch:"):
                     query = f"ytsearch:{query}"
 
                 results = await player.node.get_tracks(query)
@@ -192,14 +201,25 @@ class Music(commands.Cog, name="Music"):
                     embed.description = f"[{track['info']['title']}]({track['info']['uri']})"
                     player.add(requester=ctx.author.id, track=track)
 
-        await ctx.send(embed=embed)
+        await message.delete()
+
+        message = await ctx.send(embed=embed)
+        await asyncio.sleep(2)
+        await message.delete()
+
         try:
             self.spotify_queue = self.bot.loop.create_task(spotify_queue())
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         if not player.is_playing:
             await player.play()
+
+        context = ctx
+        now_playing = discord.Embed(color=discord.Color.blurple(), title="Now Playing",
+                                    description=f"[{player.current.title}]({track['info']['uri']})")
+        player.store("ctx", context)
+        player.store("embed", now_playing)
 
     @commands.command()
     async def seek(self, ctx, *, seconds: int):
@@ -391,7 +411,7 @@ class Music(commands.Cog, name="Music"):
         player = self.bot.lavalink.players.create(ctx.guild.id, endpoint=str(ctx.guild.region))
         # Create returns a player if one exists, otherwise creates.
 
-        should_connect = ctx.command.name in ("play", "summon")  # Add commands that require joining voice to work.
+        should_connect = ctx.command.name in ("play",)  # Add commands that require joining voice to work.
 
         if not ctx.author.voice or not ctx.author.voice.channel:
             raise commands.CommandInvokeError("Join a voice channel first.")

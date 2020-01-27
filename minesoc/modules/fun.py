@@ -1,6 +1,5 @@
 import discord
-import aiohttp.client
-import binascii
+import asyncio
 
 from discord.ext import commands
 
@@ -64,17 +63,26 @@ class Fun(commands.Cog):
 
         await ctx.send(embed=embed)
 
-
     @commands.command()
     async def cat(self, ctx):
         """Returns a random image of a cat."""
+        message = await ctx.send(
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+                                ))
         async with ctx.typing():
+            await asyncio.sleep(2.5)
+            await message.delete()
             await ctx.send(embed=(await self.bot.api.animal.fetch_cat()).embed)
 
     @commands.command()
     async def dog(self, ctx, breed: str = None, sub_breed: str = None):
         """Returns a random image of a dog."""
+        message = await ctx.send(
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+                                ))
         async with ctx.typing():
+            await asyncio.sleep(2.5)
+            await message.delete()
             await ctx.send(embed=(await self.bot.api.animal.fetch_dog(breed, sub_breed)).embed)
 
     @commands.group(aliases=["da", "devart"])
@@ -86,13 +94,23 @@ class Fun(commands.Cog):
     @deviantart.command()
     async def tag(self, ctx, tag):
         """Get a Deviant by tag."""
+        message = await ctx.send(
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+                                ))
         async with ctx.typing():
+            await asyncio.sleep(2.5)
+            await message.delete()
             await ctx.send(embed=(await self.bot.api.deviantart.browse_tags(tag)).embed)
 
     @deviantart.command()
     async def popular(self, ctx, query: str = None, category: str = None):
         """Get a Deviant by popularity."""
+        message = await ctx.send(
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+                                ))
         async with ctx.typing():
+            await asyncio.sleep(2.5)
+            await message.delete()
             await ctx.send(embed=(await self.bot.api.deviantart.browse_popular(query, category)).embed)
 
 

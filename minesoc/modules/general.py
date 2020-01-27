@@ -39,7 +39,7 @@ class General(commands.Cog):
         """Pong!"""
         start_time = time.perf_counter()
         message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), description=f"{self.bot.emojis.typing} Pinging ..."))
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Pinging ...**"))
         ack = (time.perf_counter() - start_time) * 1000
         heartbeat = self.bot.latency * 1000
 
@@ -54,7 +54,6 @@ class General(commands.Cog):
     @commands.command()
     async def about(self, ctx: commands.Context):
         """General information about the bot"""
-        app_info = await self.bot.application_info()
         guild_amount = len(self.bot.guilds)
         user_amount = len(self.bot.users)
         now_time = time.time()
@@ -84,6 +83,12 @@ class General(commands.Cog):
         num_offline = sum(member.status == discord.Status.offline and not member.bot for member in ctx.guild.members)
         num_dnd = sum(member.status == discord.Status.dnd and not member.bot for member in ctx.guild.members)
         num_idle = sum(member.status == discord.Status.idle and not member.bot for member in ctx.guild.members)
+        statuses = {f"{self.bot.emojis.status_online}": [num_online, "Online"],
+                    f"{self.bot.emojis.status_offline}": [num_offline, "Offline"],
+                    f"{self.bot.emojis.status_dnd}": [num_dnd, "DnD"],
+                    f"{self.bot.emojis.status_idle}": [num_idle, "Idle"]}
+
+        status_list = [f"{key} **{value[0]}** {value[-1]}" for key, value in statuses.items() if value[0] >= 1]
 
         embed = discord.Embed(color=self.bot.colors.neutral, title=f"{ctx.guild.name}")
         embed.set_thumbnail(url=ctx.guild.icon_url_as(static_format="png", size=1024))
@@ -96,16 +101,13 @@ class General(commands.Cog):
                         inline=False)
         number_of_bots = self.number_of_bots(ctx.guild.members)
         embed.add_field(name=f"Members `{len(ctx.guild.members)}`",
-                        value=f"{self.bot.emojis.status_online} **{num_online}** Online\n"
-                              f"{self.bot.emojis.status_dnd} **{num_dnd}** DnD\n"
-                              f"{self.bot.emojis.status_idle} **{num_idle}** Idle\n"
-                              f"{self.bot.emojis.status_offline} **{num_offline}** Offline\n"
-                              f"{self.bot.emojis.bot} **{number_of_bots}** Bots",
+                        value=f"{' | '.join(status_list)} | "
+                              f"{self.bot.emojis.bot} **{number_of_bots}** {'Bots' if number_of_bots > 1 else 'Bot'}",
                         inline=True)
         embed.add_field(name=f"Channels `{self.number_of_channels(ctx.guild.channels)}`",
-                        value=f"{self.bot.emojis.text} {len(ctx.guild.text_channels)}\n"
+                        value=f"{self.bot.emojis.text} {len(ctx.guild.text_channels)} | "
                               f"{self.bot.emojis.voice} {len(ctx.guild.voice_channels)}",
-                        inline=True)
+                        inline=False)
         if ctx.guild.features:
             embed.add_field(name="__Features__",
                             value="\n".join([f.replace("_", " ").title() for f in ctx.guild.features]),

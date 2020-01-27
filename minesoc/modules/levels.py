@@ -3,10 +3,9 @@
 
 import discord
 import aiosqlite
-import time
+import json
 import aiohttp.client
 
-from random import randint
 from discord.ext import commands, tasks
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
@@ -72,7 +71,8 @@ class Levels(commands.Cog):
                                 guild_id integer,
                                 xp integer,
                                 lvl integer,
-                                cd real
+                                cd real,
+                                color text
                                 )""")
             await db.commit()
 
@@ -83,9 +83,7 @@ class Levels(commands.Cog):
     # Commands
     @commands.command(pass_context=True, aliases=["lvl", "lev"])
     async def level(self, ctx, member: discord.Member = None):
-        """
-        Get the level of yourself or another member.
-        """
+        """Get the level of yourself or another member."""
         rankcard = Rank()
         member = ctx.author if not member else member
 
@@ -94,10 +92,14 @@ class Levels(commands.Cog):
 
         async with aiosqlite.connect("level_system.db") as db:
             db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT user_id, guild_id, xp, lvl, cd "
+            async with db.execute("SELECT user_id, guild_id, xp, lvl, cd, color "
                                   "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
                                   {"u_id": member_id, "g_id": guild_id}) as cursor:
                 user = await cursor.fetchone()
+                if user["color"] is None:
+                    await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
+                                         {"color": str(member.color).lstrip("#"), "user": member_id, "guild": guild_id})
+                    await db.commit()
 
         async with ctx.typing():
             if user:
@@ -106,17 +108,31 @@ class Levels(commands.Cog):
                         profile_bytes = await r.read()
 
                 buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
-                                       str(member.color).lstrip("#"))
+                                       user["color"])
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
             else:
                 await ctx.send("Member hasn't received xp yet.")
 
+    @commands.command(pass_context=True, aliases=["col", "colour"])
+    async def color(self, ctx, *, color: discord.Color):
+        """Change the color used for your rank card. Accepts hex or Discord color names."""
+        member = str(ctx.author.id)
+        guild = str(ctx.guild.id)
+        async with ctx.typing(), aiosqlite.connect("level_system.db") as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT user_id, guild_id, color FROM users WHERE user_id=:user AND guild_id=:guild",
+                                  {"user": member, "guild": guild}) as cursor:
+                await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
+                                     {"color": f"{color.value:0>6x}", "user": member, "guild": guild})
+                await db.commit()
+
+        embed = discord.Embed(color=color, title=f"Changed color to `{color}`")
+        await ctx.send(embed=embed)
+
     @commands.command(pass_context=True, aliases=["lb"])
     async def leaderboard(self, ctx):
-        """
-        Shows the top 10 users of your guild.
-        """
+        """Shows the top 10 users of your guild."""
         guild_check = ctx.guild is not None
         if guild_check:
             guild_id = str(ctx.guild.id)
@@ -141,7 +157,7 @@ class Levels(commands.Cog):
                     xp_to_next = round((4 * (val["lvl"] ** 3) / 5))
                     user_info += f"Level {val['lvl']} ({val['xp']}/{xp_to_next})\n"
 
-            embed = discord.Embed(color=ctx.guild.get_member(self.bot.user.id).colour,
+            embed = discord.Embed(color=ctx.me.colour,
                                   title=f"Top 10 in {ctx.guild.name}",
                                   timestamp=ctx.message.created_at)
             embed.add_field(name="Rank", value=rankings, inline=True)
@@ -149,6 +165,11 @@ class Levels(commands.Cog):
             embed.add_field(name="Level", value=user_info, inline=True)
 
             await ctx.send(embed=embed)
+
+    @color.error
+    async def color_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("Not a valid color!")
 
 
 def setup(bot):

@@ -14,7 +14,7 @@ from traceback import format_exc
 from datetime import datetime
 from pathlib import Path
 from libneko.aggregates import Proxy
-from minesoc.utils import logger, emojis, context, config, api, errors
+from minesoc.utils import logger, emojis, context, config, api
 
 
 ENV_DIR = Path(__file__).parent / ".env"
@@ -23,7 +23,7 @@ ENV_DIR = Path(__file__).parent / ".env"
 class Minesoc(Bot):
     def __init__(self, **kwargs):
         self.config = Proxy(dotenv_values(dotenv_path=ENV_DIR))
-        super().__init__(command_prefix=self.config.PREFIX, description="General purpose bot. WIP",
+        super().__init__(command_prefix=self.get_prefix, description="General purpose bot. WIP",
                          owner_id=int(self.config.OWNER_ID),
                          **kwargs)
 
@@ -63,11 +63,11 @@ class Minesoc(Bot):
             prefixes = json.load(f)
 
         try:
-            return prefixes[str(message.guild.id)]
+            data = prefixes[str(message.guild.id)]
         except KeyError:
             prefixes[str(message.guild.id)] = self.config.PREFIX
 
-        return prefixes[str(message.guild.id)]
+        return commands.when_mentioned_or(prefixes[str(message.guild.id)])(self, message)
 
     async def on_message(self, message):
         ctx = await self.get_context(message)

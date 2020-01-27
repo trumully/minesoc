@@ -1,6 +1,8 @@
 # help.py
 # This extension is used for the custom help command of the bot.
 import discord
+import json
+
 from discord.ext import commands
 
 

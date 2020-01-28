@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from libneko.aggregates import Proxy
 from minesoc.utils import logger, emojis, context, config, api
+from itertools import cycle
 
 
 ENV_DIR = Path(__file__).parent / ".env"
@@ -24,22 +25,21 @@ class Minesoc(Bot):
     def __init__(self, **kwargs):
         self.config = Proxy(dotenv_values(dotenv_path=ENV_DIR))
         super().__init__(command_prefix=self.get_prefix, description="General purpose bot. WIP",
-                         owner_id=int(self.config.OWNER_ID),
-                         **kwargs)
+                         owner_id=int(self.config.OWNER_ID), **kwargs)
 
         self.loop = asyncio.get_event_loop()
-        self.session = aiohttp.ClientSession()
         self.start_time = datetime.now()
-
-        self.api = api.API(self)
 
         self.logger = logger.CustomLogger(name="minesoc",
                                           handler=logger.DiscordHandler(webhook_url=self.config.WEBHOOK_URL),
                                           level=logging.INFO)
         self._discord_logger = logger.CustomLogger(name="discord", level=logging.DEBUG)
 
+        self.api = api.API(self)
         self._emojis = emojis.CustomEmojis()
         self.colors = config.ColorProxy()
+
+        self.status = self.loop.create_task(self.change_status())
 
     async def get_context(self, message, *, cls=None):
         return await super().get_context(message, cls=cls or context.MinesocContext)
@@ -48,15 +48,14 @@ class Minesoc(Bot):
         self.load_modules()
         await self._start()
 
-    async def close(self):
-        try:
-            await self._connection.close()
-            await self.session.close()
-        finally:
-            await super().close()
-
     async def _start(self):
         await super().start(self.config.TOKEN)
+
+    async def close(self):
+        try:
+            await self._conn.close()
+        finally:
+            await super().close()
 
     async def get_prefix(self, message):
         with open("prefixes.json", "r") as f:
@@ -105,6 +104,14 @@ class Minesoc(Bot):
         self._emojis.fetch_emojis(self.dev_guild)
         self._owner = self.get_user(self.owner_id)
         self.logger.info(f"I'm ready! Logged in as: {self.user} ({self.user.id})")
+
+    async def change_status(self):
+        await self.wait_until_ready()
+        status = cycle([f"{len(self.guilds)} guilds", f"{len(self.users)} users", "m!help"])
+        while not self.is_closed():
+            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
+                                                                 name=f"{next(status)}"))
+            await asyncio.sleep(60*10)
 
     def get_owner(self):
         return self.get_user(self.owner_id)

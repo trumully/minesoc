@@ -21,10 +21,8 @@ class Listeners(commands.Cog):
         cur_xp = user['xp']
         cur_lvl = user['lvl']
 
-        if cur_xp >= round((4 * (cur_lvl ** 3) / 5)):  # lvl 1: 1 xp, lvl 2: 2 xp, lvl 3: 26xp
-            return True
-        else:
-            return False
+        res = True if cur_xp >= round((4 * (cur_lvl ** 3) / 5)) else False
+        return res
 
     async def bot_check(self, ctx):
         if not ctx.guild:
@@ -58,6 +56,7 @@ class Listeners(commands.Cog):
         if do_lvl:
             author_id = str(message.author.id)
             guild_id = str(message.guild.id)
+            color = str(message.author.color).lstrip("#")
 
             async with aiosqlite.connect("level_system.db") as db:
                 db.row_factory = aiosqlite.Row
@@ -69,9 +68,9 @@ class Listeners(commands.Cog):
                     xp_gain = randint(1, 7)
 
                     if not member:
-                        await db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd)",
+                        await db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd, :color)",
                                          {"user": author_id, "guild": guild_id, "xp": xp_gain, "lvl": 1,
-                                          "cd": time.time()})
+                                          "cd": time.time(), "color": color})
                         await db.commit()
                     else:
                         time_diff = time.time() - member["cd"]

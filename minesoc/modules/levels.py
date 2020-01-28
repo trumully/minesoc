@@ -17,8 +17,6 @@ from PIL import Image, ImageDraw, ImageFont
 # 4. if a user's message count has increased and their cd time has elapsed, give them xp
 # 5. if this amount of xp results in a level up, send a level up message in channel of original message
 # 6. reset user's cd time
-
-
 class Rank:
     def __init__(self):
         self.font = ImageFont.truetype("arialbd.ttf", 28)
@@ -26,7 +24,11 @@ class Rank:
         self.small_font = ImageFont.truetype("arialbd.ttf", 16)
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color):
-        RGB = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+        if color == 0:
+            RGB = (0, 0, 0)
+        else:
+            color = str(color)
+            RGB = tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
         profile_bytes = Image.open(profile_bytes)
         im = Image.new("RGBA", (400, 148), (44, 44, 44, 255))
 
@@ -84,8 +86,12 @@ class Levels(commands.Cog):
     @commands.command(pass_context=True, aliases=["lvl", "lev"])
     async def level(self, ctx, member: discord.Member = None):
         """Get the level of yourself or another member."""
-        rankcard = Rank()
         member = ctx.author if not member else member
+
+        if member.bot:
+            return
+
+        rankcard = Rank()
 
         member_id = str(member.id)
         guild_id = str(ctx.guild.id)
@@ -96,10 +102,12 @@ class Levels(commands.Cog):
                                   "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
                                   {"u_id": member_id, "g_id": guild_id}) as cursor:
                 user = await cursor.fetchone()
-                if user["color"] is None:
-                    await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
-                                         {"color": str(member.color).lstrip("#"), "user": member_id, "guild": guild_id})
-                    await db.commit()
+                if user:
+                    if user["color"] is None:
+                        await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
+                                             {"color": f"{str(member.color).lstrip('#')}", "user": member_id,
+                                              "guild": guild_id})
+                        await db.commit()
 
         async with ctx.typing():
             if user:
@@ -116,10 +124,12 @@ class Levels(commands.Cog):
 
     @commands.command(pass_context=True, aliases=["col", "colour"])
     async def color(self, ctx, *, color: discord.Color):
-        """Change the color used for your rank card. Accepts hex or Discord color names."""
+        """
+        Change the color used for your rank card.
+        """
         member = str(ctx.author.id)
         guild = str(ctx.guild.id)
-        async with ctx.typing(), aiosqlite.connect("level_system.db") as db:
+        async with ctx.typing(), self.bot.db as db:
             db.row_factory = aiosqlite.Row
             async with db.execute("SELECT user_id, guild_id, color FROM users WHERE user_id=:user AND guild_id=:guild",
                                   {"user": member, "guild": guild}) as cursor:

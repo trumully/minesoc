@@ -2,7 +2,7 @@ import discord
 
 from discord.ext import commands
 from datetime import datetime
-from minesoc.utils import emojis
+from minesoc.utils import emojis, logger
 
 
 class Owner(commands.Cog):
@@ -60,7 +60,11 @@ class Owner(commands.Cog):
     async def shutdown(self, ctx: commands.Context):
         """Stops the bot, should restart it"""
         await ctx.message.add_reaction("👌")
-        await self.bot.logout()
+        try:
+            await self.bot.logout()
+            await self.bot.close()
+        except Exception as ex:
+            await self.bot.logger.warning("An error occurred trying to logout", exc_info=ex)
 
     @commands.command()
     async def emojirefresh(self, ctx):
@@ -70,7 +74,6 @@ class Owner(commands.Cog):
             _emojis.reinit()
         except Exception as err:
             await ctx.send(err)
-
 
 
 def setup(bot):

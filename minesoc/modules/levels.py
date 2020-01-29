@@ -86,7 +86,7 @@ class Levels(commands.Cog):
     @commands.command(pass_context=True, aliases=["lvl", "lev"])
     async def level(self, ctx, member: discord.Member = None):
         """Get the level of yourself or another member."""
-        member = ctx.author if not member else member
+        member = member or ctx.author
 
         if member.bot:
             return
@@ -96,18 +96,17 @@ class Levels(commands.Cog):
         member_id = str(member.id)
         guild_id = str(ctx.guild.id)
 
-        async with aiosqlite.connect("level_system.db") as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT user_id, guild_id, xp, lvl, cd, color "
-                                  "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
-                                  {"u_id": member_id, "g_id": guild_id}) as cursor:
-                user = await cursor.fetchone()
-                if user:
-                    if user["color"] is None:
-                        await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
-                                             {"color": f"{str(member.color).lstrip('#')}", "user": member_id,
-                                              "guild": guild_id})
-                        await db.commit()
+        self.bot.db.row_factory = aiosqlite.Row
+        async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl, cd, color "
+                                       "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
+                                       {"u_id": member_id, "g_id": guild_id}) as cursor:
+            user = await cursor.fetchone()
+            if user:
+                if user["color"] is None:
+                    await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
+                                         {"color": f"{str(member.color).lstrip('#')}", "user": member_id,
+                                          "guild": guild_id})
+                    await self.bot.db.commit()
 
         async with ctx.typing():
             if user:
@@ -129,13 +128,14 @@ class Levels(commands.Cog):
         """
         member = str(ctx.author.id)
         guild = str(ctx.guild.id)
-        async with ctx.typing(), self.bot.db as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute("SELECT user_id, guild_id, color FROM users WHERE user_id=:user AND guild_id=:guild",
-                                  {"user": member, "guild": guild}) as cursor:
+        async with ctx.typing():
+            self.bot.db.row_factory = aiosqlite.Row
+            async with self.bot.db.execute("SELECT user_id, guild_id, color "
+                                           "FROM users WHERE user_id=:user AND guild_id=:guild",
+                                           {"user": member, "guild": guild}) as cursor:
                 await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
                                      {"color": f"{color.value:0>6x}", "user": member, "guild": guild})
-                await db.commit()
+                await self.bot.db.commit()
 
         embed = discord.Embed(color=color, title=f"Changed color to `{color}`")
         await ctx.send(embed=embed)
@@ -147,12 +147,11 @@ class Levels(commands.Cog):
         if guild_check:
             guild_id = str(ctx.guild.id)
 
-            async with aiosqlite.connect("level_system.db") as db:
-                db.row_factory = aiosqlite.Row
-                async with db.execute("SELECT user_id, guild_id, xp, lvl "
-                                      "FROM users WHERE guild_id=:guild ORDER BY lvl DESC",
-                                      {"guild": guild_id}) as cursor:
-                    users = await cursor.fetchall()
+            self.bot.db.row_factory = aiosqlite.Row
+            async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl "
+                                  "FROM users WHERE guild_id=:guild ORDER BY lvl DESC",
+                                  {"guild": guild_id}) as cursor:
+                users = await cursor.fetchall()
 
             users_list = [dict(row) for row in users if not None]
 

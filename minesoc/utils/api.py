@@ -4,8 +4,8 @@ import aiohttp
 import asyncio
 import deviantart
 import re
+import time
 
-from discord.ext import commands
 from libneko.aggregates import Proxy
 from dotenv import dotenv_values
 from random import choice
@@ -26,7 +26,7 @@ class API:
 class DeviantArt:
 
     class DeviantArtResponse:
-        def __init__(self, response, error: discord.Embed = None):
+        def __init__(self, response, error: json = None):
             if error is None:
                 self._info = choice(response["results"])
                 self.mature = self._info["is_mature"]
@@ -48,7 +48,11 @@ class DeviantArt:
                 self.embed = self.__generate_embed()
 
             else:
-                self.embed = error
+                error = f"{response['error']}: {response['error_description']}"
+                embed = discord.Embed(color=discord.Color.red(), title="An error has occurred!",
+                                      description=f"`{error}`")
+
+                self.embed = embed
 
         def __generate_embed(self):
             embed = discord.Embed(color=discord.Color.blue(), title=self.name, url=self.url)
@@ -65,42 +69,41 @@ class DeviantArt:
         self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
         self.access_token = self.da.access_token
         self.base_url = "https://www.deviantart.com/api/v1/oauth2/"
+        self.initial = time.time()
 
     async def browse_tags(self, tags: str):
-        tags = tags.lower()
-        url = self.base_url + f"browse/tags?tag={tags}&limit=50&access_token={self.access_token}"
+        time_diff = time.time() - self.initial
+        if time_diff >= 60*60:
+            self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
+            self.access_token = self.da.access_token
+            self.initial = time.time()
+
+        url = self.base_url + f"browse/tags?tag={tags.lower()}&limit=50&access_token={self.access_token}"
         async with self.session.get(url) as r:
             if r.status == 200:
                 return self.DeviantArtResponse(response=await r.json())
             else:
-                response = await r.json()
-                if response["error"] == "invalid_token":
-                    self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
-                    self.access_token = self.da.access_token
-
-                error = f"{response['error']}: {response['error_description']}"
-                embed = discord.Embed(color=discord.Color.red(), title="An error has occurred!",
-                                      description=f"Error {r.status}\n`{error}`")
-
-                return self.DeviantArtResponse(response=None, error=embed)
+                return self.DeviantArtResponse(response=None, error=await r.json())
 
     async def browse_popular(self, query: str = None, category: str = None):
         url = self.base_url + "browse/popular?"
         if category:
-            category = category.lower()
-            url += f"category_path={category}&"
+            url += f"category_path={category.lower()}&"
         if query:
-            query = query.lower()
-            url += f"q={query}&"
+            url += f"q={query.lower()}&"
+
+        time_diff = time.time() - self.initial
+        if time_diff >= 60 * 60:
+            self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
+            self.access_token = self.da.access_token
+            self.initial = time.time()
+
         url += f"timerange=1week&limit=50&access_token={self.access_token}"
         async with self.session.get(url) as r:
             if r.status == 200:
                 return self.DeviantArtResponse(response=await r.json())
             else:
                 response = await r.json()
-                if response["error"] == "invalid_token":
-                    self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
-                    self.access_token = self.da.access_token
 
                 error = f"{response['error']}: {response['error_description']}"
                 embed = discord.Embed(color=discord.Color.red(), title="An error has occurred!",
@@ -158,11 +161,10 @@ class Animal:
         else:
             url = self.dog_url + "s/image/random"
         async with self.session.get(url) as r:
-            response = await r.json()
-            if response["status"] == "success":
-                return self.DogResponse(response=response)
+            if r.status == 200:
+                return self.DogResponse(response=await r.json())
             else:
-                embed = discord.Embed(color=discord.Color.red(), title="Error!", description=response["message"])
+                embed = discord.Embed(color=discord.Color.red(), title="Error!", description=await r.json()["message"])
                 return self.DogResponse(response=None, error=embed)
 
     async def fetch_cat(self):

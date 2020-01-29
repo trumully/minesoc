@@ -5,6 +5,7 @@ import os
 import aiohttp
 import aiosqlite
 import json
+import deviantart
 
 from dotenv import dotenv_values
 from discord.ext import commands
@@ -44,7 +45,15 @@ class Minesoc(Bot):
     async def get_context(self, message, *, cls=None):
         return await super().get_context(message, cls=cls or context.MinesocContext)
 
+    async def connect_to_database(self):
+        try:
+            self.db = await aiosqlite.connect("level_system.db")
+            self.logger.info("Connected to database.")
+        except Exception as e:
+            self.logger.warning("An error occurred connecting to the database", exc_info=e)
+
     async def start(self):
+        await self.connect_to_database()
         self.load_modules()
         await self._start()
 
@@ -111,6 +120,17 @@ class Minesoc(Bot):
         while not self.is_closed():
             await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
                                                                  name=f"{next(status)}"))
+            await asyncio.sleep(60*10)
+
+    async def get_da(self):
+        await self.wait_until_ready()
+        while not self.is_closed():
+            try:
+                self.da = deviantart.Api(self.config.DEVIANTART_CLIENT_ID, self.config.DEVIANTART_CLIENT_SECRET)
+                self.da_access_token = self.da.access_token
+            except Exception as e:
+                self.logger.warning("Failed to generate DeviantArt access token", exc_info=e)
+
             await asyncio.sleep(60*10)
 
     def get_owner(self):

@@ -1,16 +1,18 @@
 import discord
 import asyncio
 import aiohttp.client
-import textwrap
 
 from discord.ext import commands
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
 from random import getrandbits
 
 
-def binary_to_decimal(binary):
-    return int(binary, 2)
+def string2bits(s=''):
+    return [bin(ord(x))[2:].zfill(8) for x in s]
+
+
+def bits2string(b=None):
+    return ''.join([chr(int(x, 2)) for x in b])
 
 
 def measure_time(start, end):
@@ -27,44 +29,6 @@ def seconds_to_ms(seconds):
     return "%02d:%02d" % (minutes, seconds)
 
 
-class Spotify:
-    def __init__(self):
-        self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
-        self.medium_font = ImageFont.truetype("arial-unicode-ms.ttf", 18)
-        self.session = aiohttp.ClientSession()
-
-    def draw(self, name, artists, color, album_bytes: BytesIO):
-        r = color[0]
-        g = color[1]
-        b = color[2]
-        album_bytes = Image.open(album_bytes)
-        size = (160, 160)
-        album_bytes = album_bytes.resize(size)
-        im = Image.new("RGBA", (500, 170), (r, g, b, 255))
-
-        im_draw = ImageDraw.Draw(im)
-        im_draw.rectangle((5, 5, 495, 165), fill=(5, 5, 25))
-        im_draw.text((175, 30), name, font=self.medium_font, fill=(255, 255, 255, 255))
-
-        artist_text = ", ".join(artists)
-        artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
-        im_draw.text((175, 62), artist_text, font=self.font, fill=(255, 255, 255, 255))
-
-        im.paste(album_bytes, (5, 5))
-
-        buffer = BytesIO()
-        im.save(buffer, "png")
-        buffer.seek(0)
-
-        return buffer
-
-    async def fetch_cover(self, cover_url):
-        async with self.session as s:
-            async with s.get(f"{cover_url}?size=128") as r:
-                if r.status == 200:
-                    return await r.read()
-
-
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -72,16 +36,12 @@ class Fun(commands.Cog):
     @commands.group()
     async def binary(self, ctx):
         """Binary related commands"""
-        if ctx.invoked_subcommand is None:
-            await ctx.send("Invalid command.")
+        await ctx.send_help(ctx.command)
 
     @binary.command()
     async def a2b(self, ctx, *, string):
         """Convert a string to binary"""
-        if isinstance(string, int):
-            result = f"{int(string):08b}"
-        else:
-            result = " ".join(format(ord(x), "b") for x in string)
+        result = " ".join(str(i) for i in string2bits(string))
 
         embed = discord.Embed()
         if len(result) >= 300:
@@ -90,41 +50,28 @@ class Fun(commands.Cog):
             await ctx.message.add_reaction("❗")
         else:
             embed.colour = self.bot.colors.neutral
-            embed.title = f"{string} ->"
-            embed.description = f"**{result}**"
-            await ctx.message.delete()
+            embed.title = result
+            await ctx.message.add_reaction("👌")
 
-        async with ctx.typing():
-            await asyncio.sleep(2.5)
-            await ctx.message.delete
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @binary.command()
-    async def b2a(self, ctx, *, bin_data):
-        bin_data = str(bin_data).replace(" ", "")
-
-        str_data = ""
-
-        for i in range(0, len(bin_data), 7):
-            temp_data = bin_data[i:i + 7]
-            decimal_data = binary_to_decimal(temp_data)
-            str_data = str_data + chr(decimal_data)
+    async def b2a(self, ctx, *bin_data):
+        bin_data = [i for i in bin_data]
+        result = bits2string(bin_data)
+        result = "".join(str(i) for i in result)
 
         embed = discord.Embed()
-        if len(str_data) >= 300:
+        if len(bin_data) >= 300:
             embed.colour = self.bot.colors.red
             embed.title = "Output can't exceed 300 characters!"
             await ctx.message.add_reaction("❗")
         else:
             embed.colour = self.bot.colors.neutral
-            embed.title = f"{bin_data} ->"
-            embed.description = f"**{str_data}**"
+            embed.title = result
             await ctx.message.add_reaction("👌")
 
-        async with ctx.typing():
-            await asyncio.sleep(2.5)
-            await ctx.message.delete
-            await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def cat(self, ctx):
@@ -151,8 +98,7 @@ class Fun(commands.Cog):
     @commands.group(aliases=["da", "devart"])
     async def deviantart(self, ctx):
         """Offers options to browse DeviantArt."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send("Invalid command.")
+        await ctx.send_help(ctx.command)
 
     @deviantart.command()
     async def tag(self, ctx, tag):
@@ -177,33 +123,14 @@ class Fun(commands.Cog):
             await ctx.send(embed=(await self.bot.api.deviantart.browse_popular(query, category)).embed)
 
     @commands.command()
-    async def spotify(self, ctx, user: discord.Member = None):
-        user = ctx.author if not user else user
-        if user.bot:
-            return
-
-        for activity in user.activities:
-            if isinstance(activity, discord.Spotify):
-                spotify_card = Spotify()
-
-                album_bytes = await spotify_card.fetch_cover(activity.album_cover_url)
-                color = activity.color.to_rgb()
-
-                buffer = spotify_card.draw(activity.title, activity.artists, color, BytesIO(album_bytes))
-
-                await ctx.send(file=discord.File(fp=buffer, filename="spotify.png"))
-
-    @commands.command()
     async def robohash(self, ctx, *, query: str = None):
-        if query is None:
-            query = getrandbits(128)
-        async with aiohttp.ClientSession() as session:
+        query = query or getrandbits(128)
+        async with ctx.typing(), aiohttp.ClientSession() as session:
             async with session.get(f"https://robohash.org/{query}") as response:
                 robo_bytes = await response.read()
 
-        async with ctx.typing():
-            buffer = BytesIO(robo_bytes)
-            await ctx.send(file=discord.File(fp=buffer, filename="robohash.png"))
+        buffer = BytesIO(robo_bytes)
+        await ctx.send(file=discord.File(fp=buffer, filename=f"{query}.png"))
 
 
 def setup(bot):

@@ -3,9 +3,13 @@ import time
 import asyncio
 import psutil
 import platform
+import aiohttp
+import textwrap
+import datetime
 
 from discord.ext import commands
-
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
 
 initial_time = time.time()
 
@@ -21,7 +25,59 @@ def seconds_to_hms(seconds):
     seconds %= 3600
     minutes = seconds // 60
     seconds %= 60
+    if hour == 0:
+        return "%02d:%02d" % (minutes, seconds)
     return "%d:%02d:%02d" % (hour, minutes, seconds)
+
+
+class Spotify:
+    def __init__(self):
+        self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
+        self.medium_font = ImageFont.truetype("arial-unicode-ms.ttf", 18)
+        self.session = aiohttp.ClientSession()
+
+    def draw(self, name, artists, color, album_bytes: BytesIO, time_end, track_duration):
+        r = color[0]
+        g = color[1]
+        b = color[2]
+        album_bytes = Image.open(album_bytes)
+        size = (160, 160)
+        album_bytes = album_bytes.resize(size)
+
+        w, h = (500, 170)
+        im = Image.new("RGBA", (w, h), (r, g, b, 255))
+
+        im_draw = ImageDraw.Draw(im)
+        off_x, off_y, w, h = (5, 5, 495, 165)
+        im_draw.rectangle((off_x, off_y, w, h), fill=(5, 5, 25))
+        im_draw.text((175, 10), name, font=self.medium_font, fill=(255, 255, 255, 255))
+
+        artist_text = ", ".join(artists)
+        artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
+        im_draw.text((175, 40), artist_text, font=self.font, fill=(255, 255, 255, 255))
+
+        now = datetime.datetime.utcnow()
+        percentage_played = 1 - (time_end - now).total_seconds() / track_duration.total_seconds()
+        im_draw.rectangle((175, 100, 375, 125), fill=(64, 64, 64, 255))
+        im_draw.rectangle((175, 100, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
+
+        track_duration = track_duration.total_seconds()
+        duration = f"{seconds_to_hms(track_duration * percentage_played)} / {seconds_to_hms(track_duration)}"
+        im_draw.text((175, 130), duration, font=self.font, fill=(255, 255, 255, 255))
+
+        im.paste(album_bytes, (5, 5))
+
+        buffer = BytesIO()
+        im.save(buffer, "png")
+        buffer.seek(0)
+
+        return buffer
+
+    async def fetch_cover(self, cover_url):
+        async with self.session as s:
+            async with s.get(f"{cover_url}?size=128") as r:
+                if r.status == 200:
+                    return await r.read()
 
 
 class General(commands.Cog):
@@ -33,6 +89,14 @@ class General(commands.Cog):
 
     def number_of_bots(self, members):
         return sum(1 for member in members if member.bot)
+
+    def format_permission(self, permisions: discord.Permissions, seperator=", "):
+        output = list()
+        for perm in permisions:
+            if perm[1]:
+                output.append(perm[0].replace("_", " ").title())
+        else:
+            return seperator.join(output)
 
     @commands.command()
     async def ping(self, ctx: commands.Context):
@@ -114,6 +178,64 @@ class General(commands.Cog):
                             inline=False)
 
         await ctx.send(embed=embed)
+
+    @commands.command()
+    async def member(self, ctx, *, member: discord.Member = None):
+        """Member information"""
+        member = member or ctx.author
+        embed = discord.Embed(color=member.color)
+
+        embed.set_author(name=f"{member.name} ({member.id})")
+        embed.set_thumbnail(url=member.avatar_url_as(static_format="png", size=1024))
+        embed.add_field(name="Joined", value=self.bot.format_datetime(member.joined_at), inline=False)
+        embed.add_field(name="Created", value=self.bot.format_datetime(member.created_at), inline=False)
+        embed.add_field(name=f"Roles ({len(member.roles) - 1})",
+                        value=" | ".join([r.mention for r in member.roles if r != ctx.guild.default_role]),
+                        inline=False)
+        for activity in member.activities:
+            if isinstance(activity, discord.Spotify):
+                embed.add_field(name=f"Spotify",
+                                value=f"Listening to **{member.activity.title}** from "
+                                      f"**{', '.join(member.activity.artists)}**",
+                                inline=False)
+            else:
+                embed.add_field(name=f"Activity",
+                                value=f"{member.activity.type.name.title()}"
+                                      f"{' to' if member.activity.type.name == 'listening' else ''} "
+                                      f"{member.activity.name}",
+                                inline=False)
+        embed.add_field(name="Permissions", value=self.format_permission(member.permissions_in(ctx.channel)))
+
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def avatar(self, ctx: commands.Context, *, member: discord.Member = None):
+        """Avatar from a member"""
+        member = member or ctx.author
+        embed = discord.Embed(color=member.color, title=str(member))
+        embed.set_image(url=member.avatar_url_as(static_format="png", size=1024))
+
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def spotify(self, ctx, user: discord.Member = None):
+        user = ctx.author if not user else user
+        if user.bot:
+            return
+
+        for activity in user.activities:
+            if isinstance(activity, discord.Spotify):
+                spotify_card = Spotify()
+
+                album_bytes = await spotify_card.fetch_cover(activity.album_cover_url)
+                color = activity.color.to_rgb()
+
+                end = activity.end
+                duration = activity.duration
+                buffer = spotify_card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), end, duration)
+                url = f"<https://open.spotify.com/track/{activity.track_id}>"
+                await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
+                               file=discord.File(fp=buffer, filename="spotify.png"))
 
 
 def setup(bot):

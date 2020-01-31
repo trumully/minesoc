@@ -65,12 +65,12 @@ class Music(commands.Cog, name="Music"):
             await self.connect_to(guild_id, None)
             # Disconnect from the channel -- there's nothing else to play.
         if isinstance(event, lavalink.events.TrackStartEvent):
-            player = event.player
-            context = player.fetch("ctx")
-            embed = player.fetch("embed")
-            message = await context.send(embed=embed)
-            await asyncio.sleep(5)
-            await message.delete()
+            context = event.player.fetch("context")
+            track = event.player.fetch("track")
+            embed = discord.Embed(color=discord.Color.blurple(), title="Now Playing",
+                                  description=f"[{event.track.title}]({track})")
+            await asyncio.sleep(0.5)
+            await context.send(embed=embed)
 
     async def connect_to(self, guild_id: int, channel_id: str):
         """ Connects to the given voice channel ID. A channel_id of `None` means disconnect. """
@@ -83,10 +83,9 @@ class Music(commands.Cog, name="Music"):
     async def play(self, ctx, *, query: str):
         """ Searches and plays a song from a given query. """
         player = self.bot.lavalink.players.get(ctx.guild.id)
+        player.store("context", ctx)
 
         query = query.strip("<>")
-
-        message = ctx.message
 
         async with ctx.typing():
             if "spotify" in query:
@@ -139,11 +138,11 @@ class Music(commands.Cog, name="Music"):
                             try:
                                 track["is_local"]
                             except KeyError:
-                                search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
+                                search = f"ytsearch:{track['name']} {track['artists'][0]['name']} lyrics"
                                 res = await player.node.get_tracks(search)
                                 if res["tracks"]:
                                     to_play = res["tracks"][0]
-                                    if i == 0:
+                                    if i == 0 and not player.is_playing:
                                         to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
                                         await player.play(to_play)
                                     else:
@@ -151,11 +150,11 @@ class Music(commands.Cog, name="Music"):
                                 i += 1
                             else:
                                 if not track["is_local"]:
-                                    search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
+                                    search = f"ytsearch:{track['name']} {track['artists'][0]['name']} lyrics"
                                     res = await player.node.get_tracks(search)
                                     if res["tracks"]:
                                         to_play = res["tracks"][0]
-                                        if i == 0:
+                                        if i == 0 and not player.is_playing:
                                             to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
                                             await player.play(to_play)
                                         else:
@@ -164,6 +163,8 @@ class Music(commands.Cog, name="Music"):
 
                     embed.title = "Playlist Enqueued!"
                     embed.description = f"[{playlist_name}]({query}) - {len(tracks)} tracks"
+
+                    self.spotify_queue = self.bot.loop.create_task(spotify_queue())
 
                 else:
                     track = results
@@ -175,6 +176,8 @@ class Music(commands.Cog, name="Music"):
 
                     embed.title = "Track Enqueued!"
                     embed.description = f"[{to_play['info']['title']}]({to_play['info']['uri']})"
+
+                player.store("track", track["info"]["uri"])
 
             else:
                 if not re.match(url_rx, query) or not query.startswith("ytsearch:"):
@@ -201,25 +204,12 @@ class Music(commands.Cog, name="Music"):
                     embed.description = f"[{track['info']['title']}]({track['info']['uri']})"
                     player.add(requester=ctx.author.id, track=track)
 
-        await message.delete()
+                player.store("track", track["info"]["uri"])
 
-        message = await ctx.send(embed=embed)
-        await asyncio.sleep(2)
-        await message.delete()
-
-        try:
-            self.spotify_queue = self.bot.loop.create_task(spotify_queue())
-        except Exception as e:
-            print(e)
+        await ctx.send(embed=embed)
 
         if not player.is_playing:
             await player.play()
-
-        context = ctx
-        now_playing = discord.Embed(color=discord.Color.blurple(), title="Now Playing",
-                                    description=f"[{player.current.title}]({track['info']['uri']})")
-        player.store("ctx", context)
-        player.store("embed", now_playing)
 
     @commands.command()
     async def seek(self, ctx, *, seconds: int):
@@ -406,12 +396,16 @@ class Music(commands.Cog, name="Music"):
         await self.connect_to(ctx.guild.id, None)
         await ctx.send("*⃣ | Disconnected.")
 
+    @commands.command()
+    async def summon(self, ctx):
+        await self.connect_to(ctx.guild.id, str(ctx.author.voice.channel.id))
+
     async def ensure_voice(self, ctx):
         """ This check ensures that the bot and command author are in the same voicechannel. """
         player = self.bot.lavalink.players.create(ctx.guild.id, endpoint=str(ctx.guild.region))
         # Create returns a player if one exists, otherwise creates.
 
-        should_connect = ctx.command.name in ("play",)  # Add commands that require joining voice to work.
+        should_connect = ctx.command.name in ("play", "summon",)  # Add commands that require joining voice to work.
 
         if not ctx.author.voice or not ctx.author.voice.channel:
             raise commands.CommandInvokeError("Join a voice channel first.")
@@ -428,7 +422,7 @@ class Music(commands.Cog, name="Music"):
             player.store("channel", ctx.channel.id)
             await self.connect_to(ctx.guild.id, str(ctx.author.voice.channel.id))
         else:
-            if int(player.channel_id) != ctx.author.voice.channel.id:
+            if int(player.channel_id) != ctx.author.voice.channel.id and ctx.command.name != "summon":
                 raise commands.CommandInvokeError("You need to be in my voice channel.")
 
 

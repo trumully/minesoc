@@ -56,7 +56,6 @@ class Listeners(commands.Cog):
         if do_lvl:
             author_id = str(message.author.id)
             guild_id = str(message.guild.id)
-            color = str(message.author.color).lstrip("#")
 
             self.bot.db.row_factory = aiosqlite.Row
             async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl, cd FROM users "
@@ -67,18 +66,23 @@ class Listeners(commands.Cog):
                 xp_gain = randint(1, 7)
 
                 if not member:
-                    await self.bot.db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd, :color)",
+                    await self.bot.db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd, :color, :bg)",
                                               {"user": author_id, "guild": guild_id, "xp": xp_gain, "lvl": 1,
-                                               "cd": time.time(), "color": color})
+                                               "cd": time.time(), "color": "ffffff", "bg": "default"})
                     await self.bot.db.commit()
-                else:
-                    time_diff = time.time() - member["cd"]
-                    if time_diff >= 120:
-                        await cur.execute("UPDATE users SET xp=:xp, cd=:cd WHERE "
-                                          "user_id=:user AND guild_id=:guild",
-                                          {"xp": member["xp"] + xp_gain, "user": author_id, "guild": guild_id,
-                                           "cd": time.time()})
-                        await self.bot.db.commit()
+
+                if member["bg"] is None:
+                    await cur.execute("UPDATE users SET bg=:bg WHERE user_id=:user AND guild_id=:guild",
+                                      {"bg": "default", "user_id": author_id, "guild_id": guild_id})
+                    await self.bot.db.commit()
+
+                time_diff = time.time() - member["cd"]
+                if time_diff >= 120:
+                    await cur.execute("UPDATE users SET xp=:xp, cd=:cd WHERE "
+                                      "user_id=:user AND guild_id=:guild",
+                                      {"xp": member["xp"] + xp_gain, "user": author_id, "guild": guild_id,
+                                       "cd": time.time()})
+                    await self.bot.db.commit()
 
                 if self.lvl_up(member):
                     await cur.execute("UPDATE users SET lvl=:lvl WHERE user_id=:u_id AND guild_id=:g_id",

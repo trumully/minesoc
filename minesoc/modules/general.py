@@ -33,7 +33,7 @@ def seconds_to_hms(seconds):
 class Spotify:
     def __init__(self):
         self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
-        self.medium_font = ImageFont.truetype("arial-unicode-ms.ttf", 18)
+        self.medium_font = ImageFont.truetype("arial-unicode-ms.ttf", 20)
         self.session = aiohttp.ClientSession()
 
     def draw(self, name, artists, color, album_bytes: BytesIO, time_end, track_duration):
@@ -50,22 +50,25 @@ class Spotify:
         im_draw = ImageDraw.Draw(im)
         off_x, off_y, w, h = (5, 5, 495, 165)
         im_draw.rectangle((off_x, off_y, w, h), fill=(5, 5, 25))
-        im_draw.text((175, 10), name, font=self.medium_font, fill=(255, 255, 255, 255))
+        im_draw.text((175, 15), name, font=self.medium_font, fill=(255, 255, 255, 255))
 
         artist_text = ", ".join(artists)
         artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
-        im_draw.text((175, 40), artist_text, font=self.font, fill=(255, 255, 255, 255))
+        im_draw.text((175, 45), artist_text, font=self.font, fill=(255, 255, 255, 255))
 
         now = datetime.datetime.utcnow()
         percentage_played = 1 - (time_end - now).total_seconds() / track_duration.total_seconds()
-        im_draw.rectangle((175, 100, 375, 125), fill=(64, 64, 64, 255))
-        im_draw.rectangle((175, 100, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
+        im_draw.rectangle((175, 130, 375, 125), fill=(64, 64, 64, 255))
+        im_draw.rectangle((175, 130, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
 
         track_duration = track_duration.total_seconds()
         duration = f"{seconds_to_hms(track_duration * percentage_played)} / {seconds_to_hms(track_duration)}"
         im_draw.text((175, 130), duration, font=self.font, fill=(255, 255, 255, 255))
 
         im.paste(album_bytes, (5, 5))
+        spotify_logo = Image.open("/opt/discord-v2/github/minesoc/spotify-512.png")
+        spotify_logo = spotify_logo.resize((48, 48))
+        im.paste(spotify_logo, (437, 15), spotify_logo)
 
         buffer = BytesIO()
         im.save(buffer, "png")
@@ -90,9 +93,9 @@ class General(commands.Cog):
     def number_of_bots(self, members):
         return sum(1 for member in members if member.bot)
 
-    def format_permission(self, permisions: discord.Permissions, seperator=", "):
+    def format_permission(self, permissions: discord.Permissions, seperator=", "):
         output = list()
-        for perm in permisions:
+        for perm in permissions:
             if perm[1]:
                 output.append(perm[0].replace("_", " ").title())
         else:
@@ -182,7 +185,7 @@ class General(commands.Cog):
     @commands.command()
     async def member(self, ctx, *, member: discord.Member = None):
         """Member information"""
-        member = member or ctx.author
+        member = ctx.author if member is None else member
         embed = discord.Embed(color=member.color)
 
         embed.set_author(name=f"{member.name} ({member.id})")
@@ -192,18 +195,17 @@ class General(commands.Cog):
         embed.add_field(name=f"Roles ({len(member.roles) - 1})",
                         value=" | ".join([r.mention for r in member.roles if r != ctx.guild.default_role]),
                         inline=False)
-        for activity in member.activities:
-            if isinstance(activity, discord.Spotify):
-                embed.add_field(name=f"Spotify",
-                                value=f"Listening to **{member.activity.title}** from "
-                                      f"**{', '.join(member.activity.artists)}**",
-                                inline=False)
-            else:
-                embed.add_field(name=f"Activity",
-                                value=f"{member.activity.type.name.title()}"
-                                      f"{' to' if member.activity.type.name == 'listening' else ''} "
-                                      f"{member.activity.name}",
-                                inline=False)
+        if isinstance(member.activity, discord.Spotify):
+            embed.add_field(name=f"Spotify",
+                            value=f"Listening to **{member.activity.title}** from "
+                                  f"**{', '.join(member.activity.artists)}**",
+                            inline=False)
+        else:
+            embed.add_field(name=f"Activity",
+                            value=f"{member.activity.type.name.title()}"
+                                  f"{' to' if member.activity.type.name == 'listening' else ''} "
+                                  f"{member.activity.name}",
+                            inline=False)
         embed.add_field(name="Permissions", value=self.format_permission(member.permissions_in(ctx.channel)))
 
         await ctx.send(embed=embed)
@@ -211,7 +213,7 @@ class General(commands.Cog):
     @commands.command()
     async def avatar(self, ctx: commands.Context, *, member: discord.Member = None):
         """Avatar from a member"""
-        member = member or ctx.author
+        member = ctx.author if member is None else member
         embed = discord.Embed(color=member.color, title=str(member))
         embed.set_image(url=member.avatar_url_as(static_format="png", size=1024))
 
@@ -223,8 +225,10 @@ class General(commands.Cog):
         if user.bot:
             return
 
+        is_spotify = False
         for activity in user.activities:
             if isinstance(activity, discord.Spotify):
+                is_spotify = True
                 spotify_card = Spotify()
 
                 album_bytes = await spotify_card.fetch_cover(activity.album_cover_url)
@@ -236,6 +240,13 @@ class General(commands.Cog):
                 url = f"<https://open.spotify.com/track/{activity.track_id}>"
                 await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
                                file=discord.File(fp=buffer, filename="spotify.png"))
+
+        if not is_spotify:
+            embed = discord.Embed(color=self.bot.colors.neutral)
+            embed.description = f"{self.bot.emojis.spotify} " \
+                                f"{f'{user.mention} is' if user is not ctx.author else 'You are'} " \
+                                f"currently not listening to Spotify."
+            await ctx.send(embed=embed)
 
 
 def setup(bot):

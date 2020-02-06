@@ -14,7 +14,7 @@ class MinesocContext(commands.Context):
         return await self.send(embed=embed)
 
     async def info(self, description: str):
-        embed = discord.Embed(color=discord.Color.blue(), description=f"{self.bot.emojis.info} {description}")
+        embed = discord.Embed(color=discord.Color.blue(), description=f"ℹ️ {description}")
         embed.set_footer(text=f"Command executed by: {self.author}",
                          icon_url=self.author.avatar_url_as(static_format="png"))
         return await self.send(embed=embed)
@@ -49,10 +49,10 @@ class MinesocContext(commands.Context):
         else:
             reaction = str(reaction)
 
-            if reaction == self.bot.emojis.check:
+            if reaction == self.bot.emojis.greenTick:
                 await message.delete()
                 return True
-            elif reaction == self.bot.emojis.cross:
+            elif reaction == self.bot.emojis.redTick:
                 await message.delete()
                 await self.error(description="Action declined.")
                 return False

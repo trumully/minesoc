@@ -18,13 +18,7 @@ class Config(commands.Cog):
                 _commands = cog.get_commands()
                 self.cog_dict[f"{cog_name}"] = [c.name for c in _commands]
 
-    @commands.group()
-    @commands.has_permissions(manage_guild=True)
-    async def config(self, ctx):
-        if ctx.invoked_subcommand is None:
-            await ctx.send("Invalid subcommand")
-
-    @config.command()
+    @commands.command()
     async def enable(self, ctx, *, option: str):
         option = option.lower()
         to_enable = None
@@ -51,7 +45,7 @@ class Config(commands.Cog):
                 res[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
                 data = res[str(ctx.guild.id)]
 
-            embed = discord.Embed(color=discord.Color.green())
+            embed = discord.Embed(color=self.bot.colors.green)
 
             if is_cog:
                 title = "Enabled the X cog."
@@ -81,80 +75,73 @@ class Config(commands.Cog):
 
             await ctx.send(embed=embed)
 
-    @config.command()
-    async def disable(self, ctx, *, option: str):
-        option = option.lower()
-        to_disable = None
-        is_cog = False
+    @commands.command()
+    async def disable(self, ctx, command: str):
+        _commands = await self.bot.filter_commands(self.bot.commands, sort=True)
+        command_names = (command.name for command in _commands)
 
-        for cog in self.cog_dict:
-            if option.casefold() == cog.casefold():
-                to_disable = cog
-                is_cog = True
-            else:
-                for command in self.cog_dict[cog.title()]:
-                    if option.casefold() == command.casefold():
-                        to_disable = command
+        if command not in command_names:
+            return await ctx.error(description=f"Command `{command}` does not exist.")
 
-        if to_disable is None:
-            return await ctx.send("Could not find that cog/command.")
         else:
+            def check(author):
+                options = [1, 2, "exit"]
+
+                def inner_check(message):
+                    if message.author != author or message.content not in options:
+                        return False
+                    return True
+
+                return inner_check
+
+            message = await ctx.send(f"ℹ️ | **Disabling `{command}`**\n"
+                                     f"```py"
+                                     f"Would you like to disable this command in this channel or server?\n\n"
+                                     f"[1] # Channel\n[2] # Server\n\n"
+                                     f"Type the appropriate number to access the menu.\n"
+                                     f"Type 'exit' to leave the menu.```")
+
             with open("config.json", "r") as f:
                 res = json.load(f)
 
-            try:
-                data = res[str(ctx.guild.id)]
-            except KeyError:
-                res[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-                data = res[str(ctx.guild.id)]
+            data = res.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
 
-            embed = discord.Embed(color=discord.Color.red())
+            embed = discord.Embed(color=self.bot.colors.red,
+                                  title=f"🚫 | **{ctx.author.name}**, you have disabled `{command}` in")
 
-            if is_cog:
-                title = "Disabled the X cog."
-                error = "X cog is already disabled!"
-                disabled = [c for c in self.cog_dict[to_disable.title()]]
-            else:
-                title = "Disabled the X command."
-                error = "X command is already disabled!"
-                disabled = [to_disable.lower()]
-
-            any_disabled = False
-            for i in disabled:
-                if i not in data["disabled_commands"]:
-                    data["disabled_commands"].append(i)
-                    any_disabled = True
-            if to_disable == "Levels":
-                data["lvl_msg"] = False
-                data["lvl_system"] = False
-
-            if any_disabled:
-                embed.title = title.replace("X", f"`{to_disable}`")
-            else:
-                embed.title = error.replace("X", f"`{to_disable}`")
+            data["disabled_commands"].append(command)
 
             with open("config.json", "w") as f:
                 json.dump(res, f, indent=4)
 
             await ctx.send(embed=embed)
 
-    @config.command()
-    async def lvl_msg(self, ctx):
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def persistence(self, ctx):
         with open("config.json", "r") as f:
             res = json.load(f)
 
-        try:
-            data = res[str(ctx.guild.id)]
-        except KeyError:
-            res[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-            data = res[str(ctx.guild.id)]
+        data = res.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
+
+        def check(author):
+            options = []
+
+            def inner_check(message):
+                if message.author != author or message.content not in options:
+                    return False
+                return True
+
+            return inner_check
+
+        await ctx.send()
 
         data["lvl_msg"] = not data["lvl_msg"]
 
         embed = discord.Embed()
 
         embed.title = "Level up message disabled" if not data["lvl_msg"] else "Level up message enabled"
-        embed.colour = discord.Color.red() if not data["lvl_msg"] else discord.Color.green()
+        embed.colour = self.bot.colors.red if not data["lvl_msg"] else self.bot.colors.green
 
         with open("config.json", "w") as f:
             json.dump(res, f, indent=4)
@@ -163,7 +150,7 @@ class Config(commands.Cog):
 
     @commands.command(name="prefix")
     @commands.has_permissions(manage_guild=True)
-    async def changeprefix(self, ctx, prefix: str):
+    async def change_prefix(self, ctx, prefix: str = None):
         embed = discord.Embed()
         if len(prefix) >= 15:
             embed.colour = discord.Color.red()

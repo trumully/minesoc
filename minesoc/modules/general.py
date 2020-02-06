@@ -6,12 +6,12 @@ import platform
 import aiohttp
 import textwrap
 import datetime
+import spotipy
+import re
 
 from discord.ext import commands
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
-
-initial_time = time.time()
 
 
 def measure_time(start, end):
@@ -30,13 +30,13 @@ def seconds_to_hms(seconds):
     return "%d:%02d:%02d" % (hour, minutes, seconds)
 
 
-class Spotify:
+class SpotifyImage:
     def __init__(self):
         self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
         self.medium_font = ImageFont.truetype("arial-unicode-ms.ttf", 20)
         self.session = aiohttp.ClientSession()
 
-    def draw(self, name, artists, color, album_bytes: BytesIO, time_end, track_duration):
+    def draw(self, name, artists, color, album_bytes: BytesIO, track_duration=None, time_end=None):
         r = color[0]
         g = color[1]
         b = color[2]
@@ -56,14 +56,17 @@ class Spotify:
         artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
         im_draw.text((175, 45), artist_text, font=self.font, fill=(255, 255, 255, 255))
 
-        now = datetime.datetime.utcnow()
-        percentage_played = 1 - (time_end - now).total_seconds() / track_duration.total_seconds()
-        im_draw.rectangle((175, 130, 375, 125), fill=(64, 64, 64, 255))
-        im_draw.rectangle((175, 130, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
+        if time_end is not None and track_duration is not None:
+            now = datetime.datetime.utcnow()
+            percentage_played = 1 - (time_end - now).total_seconds() / track_duration.total_seconds()
+            im_draw.rectangle((175, 130, 375, 125), fill=(64, 64, 64, 255))
+            im_draw.rectangle((175, 130, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
 
-        track_duration = track_duration.total_seconds()
-        duration = f"{seconds_to_hms(track_duration * percentage_played)} / {seconds_to_hms(track_duration)}"
-        im_draw.text((175, 130), duration, font=self.font, fill=(255, 255, 255, 255))
+            track_duration = track_duration.total_seconds()
+            duration = f"{seconds_to_hms(track_duration * percentage_played)} / {seconds_to_hms(track_duration)}"
+            im_draw.text((175, 130), duration, font=self.font, fill=(255, 255, 255, 255))
+        else:
+            im_draw.text((175, 130), seconds_to_hms(track_duration), font=self.font, fill=(255, 255, 255, 255))
 
         im.paste(album_bytes, (5, 5))
         spotify_logo = Image.open("/opt/discord-v2/github/minesoc/spotify-512.png")
@@ -78,7 +81,7 @@ class Spotify:
 
     async def fetch_cover(self, cover_url):
         async with self.session as s:
-            async with s.get(f"{cover_url}?size=128") as r:
+            async with s.get(cover_url) as r:
                 if r.status == 200:
                     return await r.read()
 
@@ -118,13 +121,14 @@ class General(commands.Cog):
             await message.delete()
             await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(aliases=["minesoc"])
     async def about(self, ctx: commands.Context):
         """General information about the bot"""
         guild_amount = len(self.bot.guilds)
         user_amount = len(self.bot.users)
-        now_time = time.time()
-        uptime = measure_time(initial_time, now_time)
+        now = time.time_ns()
+        uptime = datetime.timedelta(microseconds=(now - self.bot.start_time) / 1000)
+        uptime = str(uptime).split(".")[0]
         embed = discord.Embed(title=f"{self.bot.emojis.bot} About: {self.bot.user.name} | ID: {self.bot.user.id}",
                               description=f"{self.bot.description}\n"
                                           f"Serving **{user_amount} users** on **{guild_amount} guilds**",
@@ -219,34 +223,62 @@ class General(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.group(invoke_without_command=True)
     async def spotify(self, ctx, user: discord.Member = None):
         user = ctx.author if not user else user
         if user.bot:
             return
 
-        is_spotify = False
         for activity in user.activities:
             if isinstance(activity, discord.Spotify):
-                is_spotify = True
-                spotify_card = Spotify()
+                spotify_card = SpotifyImage()
 
                 album_bytes = await spotify_card.fetch_cover(activity.album_cover_url)
                 color = activity.color.to_rgb()
 
                 end = activity.end
                 duration = activity.duration
-                buffer = spotify_card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), end, duration)
+                buffer = spotify_card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), duration, end)
                 url = f"<https://open.spotify.com/track/{activity.track_id}>"
-                await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
-                               file=discord.File(fp=buffer, filename="spotify.png"))
+                await ctx.message.delete()
+                return await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
+                                      file=discord.File(fp=buffer, filename="spotify.png"))
 
-        if not is_spotify:
-            embed = discord.Embed(color=self.bot.colors.neutral)
-            embed.description = f"{self.bot.emojis.spotify} " \
-                                f"{f'{user.mention} is' if user is not ctx.author else 'You are'} " \
-                                f"currently not listening to Spotify."
-            await ctx.send(embed=embed)
+        embed = discord.Embed(color=self.bot.colors.neutral)
+        embed.description = f"{self.bot.emojis.spotify} " \
+                            f"{f'{user.mention} is' if user is not ctx.author else 'You are'} " \
+                            f"currently not listening to Spotify."
+        await ctx.send(embed=embed)
+
+    @spotify.command(name="get")
+    async def spotify_get(self, ctx, spotify_link):
+        credentials = spotipy.SpotifyClientCredentials(client_id=str(self.bot.config.SPOTIFY_CLIENT_ID),
+                                                       client_secret=str(self.bot.config.SPOTIFY_CLIENT_SECRET))
+        token = credentials.get_access_token()
+        spotify = spotipy.Spotify(auth=token)
+
+        uri = "spotify:"
+        res = re.search("com/(.*)\\?si=", spotify_link).group(1)
+        res = res.replace("/", ":")
+        uri += res
+        track = uri.split(":")[2]
+
+        try:
+            spotify_card = SpotifyImage()
+            result = spotify.track(track)
+            url = f"<{result['external_urls']['spotify']}>"
+            album_bytes = await spotify_card.fetch_cover(f"{result['album']['images'][0]['url']}")
+            track_name = result["name"]
+            track_artists = (i["name"] for i in result["artists"])
+            color = tuple(int("1db954"[i:i + 2], 16) for i in (0, 2, 4))  # 1db954 is Spotify color
+            duration = result["duration_ms"] / 1000
+            buffer = spotify_card.draw(track_name, track_artists, color, BytesIO(album_bytes), duration)
+            await ctx.message.delete()
+            return await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
+                                  file=discord.File(fp=buffer, filename="spotify.png"))
+        except Exception as e:
+            print(e)
+            await ctx.error(description="An error occurred! Track ID may be invalid or the Spotify token is expired.")
 
 
 def setup(bot):

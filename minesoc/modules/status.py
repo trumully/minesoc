@@ -40,7 +40,6 @@ class Minecraft(commands.Cog, name="Minecraft"):
                         embed = discord.Embed(title="An unexpected error has occurred.", colour=self.bot.colors.red)
                     finally:
                         await session.close()
-
             online = res["online"]
             if online:
                 favicon = res["favicon"]
@@ -69,7 +68,7 @@ class Minecraft(commands.Cog, name="Minecraft"):
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send("Please enter a server address.")
         if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send(f"Please try again in `{error.retry_after:.2f}s`")
+            await ctx.message.add_reaction("🕒")
 
 
 def setup(bot):

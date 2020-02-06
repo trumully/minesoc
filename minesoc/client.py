@@ -1,22 +1,23 @@
 import discord
 import asyncio
 import logging
-import os
-import aiohttp
 import aiosqlite
 import json
 import deviantart
+import aiohttp
+import time
+import spotipy
 
 from dotenv import dotenv_values
 from discord.ext import commands
 from discord.ext.commands import Bot
 from os import listdir
-from traceback import format_exc
 from datetime import datetime
 from pathlib import Path
 from libneko.aggregates import Proxy
 from minesoc.utils import logger, emojis, context, config, api
 from itertools import cycle
+from random import randint
 
 
 ENV_DIR = Path(__file__).parent / ".env"
@@ -29,7 +30,7 @@ class Minesoc(Bot):
                          owner_id=int(self.config.OWNER_ID), **kwargs)
 
         self.loop = asyncio.get_event_loop()
-        self.start_time = datetime.now()
+        self.start_time = time.time_ns()
 
         self.logger = logger.CustomLogger(name="minesoc",
                                           handler=logger.DiscordHandler(webhook_url=self.config.WEBHOOK_URL),
@@ -39,6 +40,9 @@ class Minesoc(Bot):
         self.api = api.API(self)
         self._emojis = emojis.CustomEmojis()
         self.colors = config.ColorProxy()
+        self._conn = aiohttp.ClientSession()
+
+        self.xp_values = Proxy({"min": 3, "max": 5})
 
         self.status = self.loop.create_task(self.change_status())
 
@@ -47,7 +51,7 @@ class Minesoc(Bot):
 
     async def connect_to_database(self):
         try:
-            self.db = await aiosqlite.connect("level_system.db")
+            self.db = await aiosqlite.connect("database.db")
             self.logger.info("Connected to database.")
         except Exception as e:
             self.logger.warning("An error occurred connecting to the database", exc_info=e)
@@ -78,6 +82,9 @@ class Minesoc(Bot):
         return commands.when_mentioned_or(prefixes[str(message.guild.id)])(self, message)
 
     async def on_message(self, message):
+        if isinstance(message.channel, discord.DMChannel):
+            return
+
         ctx = await self.get_context(message)
 
         with open("config.json", "r") as f:
@@ -96,6 +103,9 @@ class Minesoc(Bot):
                 raise commands.DisabledCommand(message="Tried to invoke disabled command")
             else:
                 await self.process_commands(message)
+
+    def xp_gain(self):
+        return randint(self.xp_values.min, self.xp_values.max)
 
     def load_modules(self):
         for module in listdir(f"minesoc/{self.config.MODULES_PATH}"):
@@ -131,7 +141,17 @@ class Minesoc(Bot):
             except Exception as e:
                 self.logger.warning("Failed to generate DeviantArt access token", exc_info=e)
 
-            await asyncio.sleep(60*10)
+            await asyncio.sleep(60*60)
+
+    async def connect_to_spotify(self):
+        await self.wait_until_ready()
+        try:
+            credentials = spotipy.SpotifyClientCredentials(client_id=str(self.config.SPOTIFY_CLIENT_ID),
+                                                           client_secret=str(self.config.SPOTIFY_CLIENT_SECRET))
+            token = credentials.get_access_token()
+            self.spotify_token = token
+        except Exception as e:
+            self.logger.warning("Failed to generate Spotify access token", exc_info=e)
 
     def get_owner(self):
         return self.get_user(self.owner_id)

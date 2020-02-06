@@ -4,7 +4,8 @@ import aiosqlite
 import time
 
 from discord.ext import commands
-from random import randint
+
+LEVEL_COOLDOWN = 120
 
 
 class Listeners(commands.Cog):
@@ -44,11 +45,7 @@ class Listeners(commands.Cog):
         with open("config.json", "r") as f:
             response = json.load(f)
 
-        try:
-            data = response[str(ctx.guild.id)]
-        except KeyError:
-            response[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-            data = response[str(ctx.guild.id)]
+        data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
 
         do_lvl = data["lvl_system"]
         do_lvl_msg = data["lvl_msg"]
@@ -63,7 +60,7 @@ class Listeners(commands.Cog):
                                            {"user": author_id, "guild": guild_id}) as cur:
                 member = await cur.fetchone()
 
-                xp_gain = randint(1, 7)
+                xp_gain = self.bot.xp_gain()
 
                 if not member:
                     await self.bot.db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd, :color, :bg)",
@@ -71,13 +68,8 @@ class Listeners(commands.Cog):
                                                "cd": time.time(), "color": "ffffff", "bg": "default"})
                     await self.bot.db.commit()
 
-                if member["bg"] is None:
-                    await cur.execute("UPDATE users SET bg=:bg WHERE user_id=:user AND guild_id=:guild",
-                                      {"bg": "default", "user_id": author_id, "guild_id": guild_id})
-                    await self.bot.db.commit()
-
                 time_diff = time.time() - member["cd"]
-                if time_diff >= 120:
+                if time_diff >= LEVEL_COOLDOWN:
                     await cur.execute("UPDATE users SET xp=:xp, cd=:cd WHERE "
                                       "user_id=:user AND guild_id=:guild",
                                       {"xp": member["xp"] + xp_gain, "user": author_id, "guild": guild_id,

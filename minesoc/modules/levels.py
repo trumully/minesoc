@@ -206,7 +206,7 @@ class Levels(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def persistence(self, ctx):
+    async def level_persistence(self, ctx):
         with open("config.json", "r") as f:
             response = json.load(f)
 

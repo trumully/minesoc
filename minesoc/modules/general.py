@@ -14,6 +14,9 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
 
+SPOTIFY_COLOR = discord.Color(int(0x1db954))
+
+
 def measure_time(start, end):
     duration = int(end - start)
     return seconds_to_hms(duration)
@@ -224,61 +227,72 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
+    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.has_permissions(attach_files=True)
     async def spotify(self, ctx, user: discord.Member = None):
         user = ctx.author if not user else user
         if user.bot:
             return
 
-        for activity in user.activities:
-            if isinstance(activity, discord.Spotify):
-                spotify_card = SpotifyImage()
+        async with ctx.typing():
+            for activity in user.activities:
+                if isinstance(activity, discord.Spotify):
+                    card = SpotifyImage()
 
-                album_bytes = await spotify_card.fetch_cover(activity.album_cover_url)
-                color = activity.color.to_rgb()
+                    album_bytes = await card.fetch_cover(activity.album_cover_url)
+                    color = activity.color.to_rgb()
 
-                end = activity.end
-                duration = activity.duration
-                buffer = spotify_card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), duration, end)
-                url = f"<https://open.spotify.com/track/{activity.track_id}>"
-                await ctx.message.delete()
-                return await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
-                                      file=discord.File(fp=buffer, filename="spotify.png"))
+                    end = activity.end
+                    duration = activity.duration
+                    buffer = card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), duration, end)
+                    url = f"<https://open.spotify.com/track/{activity.track_id}>"
+                    await ctx.message.delete()
+                    embed = discord.Embed(description=f"{self.bot.emojis.spotify} {user.mention} is listening to:\n**{url}**", color=activity.color)
+                    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar_url)
+                    file = discord.File(fp=buffer, filename="spotify.png")
+                    embed.set_image(url="attachment://spotify.png")
+                    return await ctx.send(embed=embed, file=file)
 
-        embed = discord.Embed(color=self.bot.colors.neutral)
-        embed.description = f"{self.bot.emojis.spotify} " \
-                            f"{f'{user.mention} is' if user is not ctx.author else 'You are'} " \
-                            f"currently not listening to Spotify."
-        await ctx.send(embed=embed)
+            await ctx.send(embed=discord.Embed(color=SPOTIFY_COLOR,
+                                               description=f"{self.bot.emojis.spotify} "
+                                                           f"{f'{user.mention} is' if user is not ctx.author else 'You are'} "
+                                                           f"currently not listening to Spotify."))
 
     @spotify.command(name="get")
     async def spotify_get(self, ctx, spotify_link):
-        credentials = spotipy.SpotifyClientCredentials(client_id=str(self.bot.config.SPOTIFY_CLIENT_ID),
-                                                       client_secret=str(self.bot.config.SPOTIFY_CLIENT_SECRET))
-        token = credentials.get_access_token()
-        spotify = spotipy.Spotify(auth=token)
+        async with ctx.typing():
+            credentials = spotipy.SpotifyClientCredentials(client_id=str(self.bot.config.SPOTIFY_CLIENT_ID),
+                                                           client_secret=str(self.bot.config.SPOTIFY_CLIENT_SECRET))
+            token = credentials.get_access_token()
+            spotify = spotipy.Spotify(auth=token)
 
-        uri = "spotify:"
-        res = re.search("com/(.*)\\?si=", spotify_link).group(1)
-        res = res.replace("/", ":")
-        uri += res
-        track = uri.split(":")[2]
+            uri = "spotify:"
+            res = re.search("com/(.*)\\?si=", spotify_link).group(1)
+            res = res.replace("/", ":")
+            uri += res
+            track = uri.split(":")[2]
 
-        try:
-            spotify_card = SpotifyImage()
+            card = SpotifyImage()
             result = spotify.track(track)
             url = f"<{result['external_urls']['spotify']}>"
-            album_bytes = await spotify_card.fetch_cover(f"{result['album']['images'][0]['url']}")
+            album_bytes = await card.fetch_cover(f"{result['album']['images'][0]['url']}")
             track_name = result["name"]
             track_artists = (i["name"] for i in result["artists"])
-            color = tuple(int("1db954"[i:i + 2], 16) for i in (0, 2, 4))  # 1db954 is Spotify color
             duration = result["duration_ms"] / 1000
-            buffer = spotify_card.draw(track_name, track_artists, color, BytesIO(album_bytes), duration)
+            buffer = card.draw(track_name, track_artists, SPOTIFY_COLOR.to_rgb(), BytesIO(album_bytes), duration)
             await ctx.message.delete()
-            return await ctx.send(f"{self.bot.emojis.spotify} **{url}**",
-                                  file=discord.File(fp=buffer, filename="spotify.png"))
-        except Exception as e:
-            print(e)
-            await ctx.error(description="An error occurred! Track ID may be invalid or the Spotify token is expired.")
+            await ctx.send(f"{self.bot.emojis.spotify} **{url}** {ctx.author.mention}",
+                           file=discord.File(fp=buffer, filename="spotify.png"))
+
+    @spotify.error
+    async def spotify_error(self, ctx, error):
+        if isinstance(error, spotipy.SpotifyException):
+            await ctx.error(description=f"Could not provide given track or the Spotify authentication is invalid.\n"
+                                        f"{error}")
+
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, discord.Forbidden):
+            await ctx.error(description="I don't have permission to do that! Make sure I have `Administrator`.")
 
 
 def setup(bot):

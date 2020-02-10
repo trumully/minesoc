@@ -126,11 +126,14 @@ class Minesoc(Bot):
 
     async def change_status(self):
         await self.wait_until_ready()
-        status = cycle([f"{len(self.guilds)} guilds", f"{len(self.users)} users", "m!help"])
+        status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users"])
         while not self.is_closed():
+            status = next(status_list, "m!help")
+            if status == "m!help":
+                status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users"])
             await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
-                                                                 name=f"{next(status)}"))
-            await asyncio.sleep(60*10)
+                                                                 name=status))
+            await asyncio.sleep(600)
 
     async def get_da(self):
         await self.wait_until_ready()
@@ -141,17 +144,7 @@ class Minesoc(Bot):
             except Exception as e:
                 self.logger.warning("Failed to generate DeviantArt access token", exc_info=e)
 
-            await asyncio.sleep(60*60)
-
-    async def connect_to_spotify(self):
-        await self.wait_until_ready()
-        try:
-            credentials = spotipy.SpotifyClientCredentials(client_id=str(self.config.SPOTIFY_CLIENT_ID),
-                                                           client_secret=str(self.config.SPOTIFY_CLIENT_SECRET))
-            token = credentials.get_access_token()
-            self.spotify_token = token
-        except Exception as e:
-            self.logger.warning("Failed to generate Spotify access token", exc_info=e)
+            await asyncio.sleep(3600)
 
     def get_owner(self):
         return self.get_user(self.owner_id)

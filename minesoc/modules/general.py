@@ -129,8 +129,7 @@ class General(commands.Cog):
         """General information about the bot"""
         guild_amount = len(self.bot.guilds)
         user_amount = len(self.bot.users)
-        now = time.time_ns()
-        uptime = datetime.timedelta(microseconds=(now - self.bot.start_time) / 1000)
+        uptime = datetime.timedelta(microseconds=(time.time_ns() - self.bot.start_time) / 1000)
         uptime = str(uptime).split(".")[0]
         embed = discord.Embed(title=f"{self.bot.emojis.bot} About: {self.bot.user.name} | ID: {self.bot.user.id}",
                               description=f"{self.bot.description}\n"

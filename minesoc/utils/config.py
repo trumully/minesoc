@@ -1,6 +1,11 @@
 import json
-
 from libneko.aggregates import Proxy
+
+
+class File(Proxy):
+    def __init__(self, path):
+        with open(path, "r") as f:
+            super().__init__(json.loads(f.read()))
 
 
 class ColorProxy(Proxy):

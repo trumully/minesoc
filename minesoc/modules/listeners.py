@@ -42,7 +42,7 @@ class Listeners(commands.Cog):
         if message.author.bot or ctx.valid:
             return
 
-        with open("config.json", "r") as f:
+        with open("guild_config.json", "r") as f:
             response = json.load(f)
 
         data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})

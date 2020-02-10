@@ -106,6 +106,9 @@ venv.bak/
 # Other
 lavalink-logs/
 Lavalink.jar
-config.json
+guild_config.json
 prefixes.json
+database.db
 
+/backgrounds/
+/requirements.txt

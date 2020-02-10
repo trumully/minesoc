@@ -206,18 +206,11 @@ class Levels(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def level_persistence(self, ctx):
-        with open("config.json", "r") as f:
+    async def persistence(self, ctx):
+        with open("guild_config.json", "r") as f:
             response = json.load(f)
 
-        print(response)
-
-        try:
-            data = response[str(ctx.guild.id)]
-        except KeyError:
-            response[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-
-        data = response[str(ctx.guild.id)]
+        data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
 
         options = ["Edit persistence settings", "Edit level-up message settings"]
         options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
@@ -288,8 +281,7 @@ class Levels(commands.Cog):
 
                     await menu.delete()
 
-        print(data)
-        with open("config.json", "w") as f:
+        with open("guild_config.json", "w") as f:
             json.dump(response, f, indent=4)
 
     @profile_color.error

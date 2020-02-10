@@ -6,28 +6,21 @@ import json
 import deviantart
 import aiohttp
 import time
-import spotipy
 
-from dotenv import dotenv_values
 from discord.ext import commands
 from discord.ext.commands import Bot
-from os import listdir
 from datetime import datetime
 from pathlib import Path
 from libneko.aggregates import Proxy
 from minesoc.utils import logger, emojis, context, config, api
-from itertools import cycle
 from random import randint
-
-
-ENV_DIR = Path(__file__).parent / ".env"
 
 
 class Minesoc(Bot):
     def __init__(self, **kwargs):
-        self.config = Proxy(dotenv_values(dotenv_path=ENV_DIR))
-        super().__init__(command_prefix=self.get_prefix, description="General purpose bot. WIP",
-                         owner_id=int(self.config.OWNER_ID), **kwargs)
+        self.config = config.File("config.json")
+        super().__init__(command_prefix=self.get_prefix, description="General purpose bot. WIP.",
+                         owner_id=int(self.config.owner), **kwargs)
 
         self.loop = asyncio.get_event_loop()
         self.start_time = time.time_ns()
@@ -37,10 +30,10 @@ class Minesoc(Bot):
                                           level=logging.INFO)
         self._discord_logger = logger.CustomLogger(name="discord", level=logging.DEBUG)
 
+        self.path = Path(__file__).parent
         self.api = api.API(self)
         self._emojis = emojis.CustomEmojis()
         self.colors = config.ColorProxy()
-        self._conn = aiohttp.ClientSession()
 
         self.xp_values = Proxy({"min": 3, "max": 5})
 
@@ -66,7 +59,7 @@ class Minesoc(Bot):
 
     async def close(self):
         try:
-            await self._conn.close()
+            await self.db.close()
         finally:
             await super().close()
 
@@ -74,10 +67,7 @@ class Minesoc(Bot):
         with open("prefixes.json", "r") as f:
             prefixes = json.load(f)
 
-        try:
-            data = prefixes[str(message.guild.id)]
-        except KeyError:
-            prefixes[str(message.guild.id)] = self.config.PREFIX
+        prefixes.get(str(message.guild.id, self.config.PREFIX))
 
         return commands.when_mentioned_or(prefixes[str(message.guild.id)])(self, message)
 
@@ -87,19 +77,13 @@ class Minesoc(Bot):
 
         ctx = await self.get_context(message)
 
-        with open("config.json", "r") as f:
+        with open("guild_config.json", "r") as f:
             response = json.load(f)
 
-        try:
-            data = response[str(ctx.guild.id)]
-        except KeyError:
-            response[str(ctx.guild.id)] = {"disabled_commands": [], "lvl_msg": True, "lvl_system": True}
-            data = response[str(ctx.guild.id)]
-
-        disabled_commands = data["disabled_commands"]
+        data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
 
         if ctx.valid:
-            if ctx.command.name in disabled_commands:
+            if ctx.command.name in data["disabled_commands"]:
                 raise commands.DisabledCommand(message="Tried to invoke disabled command")
             else:
                 await self.process_commands(message)
@@ -108,10 +92,11 @@ class Minesoc(Bot):
         return randint(self.xp_values.min, self.xp_values.max)
 
     def load_modules(self):
-        for module in listdir(f"minesoc/{self.config.MODULES_PATH}"):
+        for module in Path(f"minesoc/{self.config.MODULES_PATH}").iterdir():
+            module = str(module)
             if module[-3:] == ".py" and module[:-3] != "__init__":
                 try:
-                    self.load_extension(f"minesoc.{self.config.MODULES_PATH}.{module.replace('.py', '')}")
+                    self.load_extension(f"minesoc.{self.config.modules_path}.{module.replace('.py', '')}")
                 except Exception as ex:
                     self.logger.warning(f"Module {module.strip('.py')} failed to load due to the following error: "
                                         f"{type(ex).__name__}: {ex}")
@@ -119,7 +104,7 @@ class Minesoc(Bot):
             self.load_extension("jishaku")
 
     async def on_ready(self):
-        self.dev_guild = self.get_guild(int(self.config.DEV_GUILD))
+        self.dev_guild = self.get_guild(int(self.config.dev_guild))
         self._emojis.fetch_emojis(self.dev_guild)
         self._owner = self.get_user(self.owner_id)
         self.logger.info(f"I'm ready! Logged in as: {self.user} ({self.user.id})")

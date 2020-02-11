@@ -26,7 +26,7 @@ class Minesoc(Bot):
         self.start_time = time.time_ns()
 
         self.logger = logger.CustomLogger(name="minesoc",
-                                          handler=logger.DiscordHandler(webhook_url=self.config.WEBHOOK_URL),
+                                          handler=logger.DiscordHandler(webhook_url=self.config.webhook_url),
                                           level=logging.INFO)
         self._discord_logger = logger.CustomLogger(name="discord", level=logging.DEBUG)
 

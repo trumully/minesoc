@@ -124,27 +124,27 @@ class Fun(commands.Cog):
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
 
-    @deviantart.command()
-    async def tag(self, ctx, tag):
-        """Get a Deviant by tag."""
-        message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
-                                ))
-        async with ctx.typing():
-            await asyncio.sleep(2.5)
-            await message.delete()
-            await ctx.send(embed=(await self.bot.api.deviantart.browse_tags(tag)).embed)
+    # @deviantart.command()
+    # async def tag(self, ctx, tag):
+    #     """Get a Deviant by tag."""
+    #     message = await ctx.send(
+    #         embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+    #                             ))
+    #     async with ctx.typing():
+    #         await asyncio.sleep(2.5)
+    #         await message.delete()
+    #         await ctx.send(embed=(await self.bot.api.deviantart.browse_tags(tag)).embed)
 
-    @deviantart.command()
-    async def popular(self, ctx, query: str = None, category: str = None):
-        """Get a Deviant by popularity."""
-        message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
-                                ))
-        async with ctx.typing():
-            await asyncio.sleep(2.5)
-            await message.delete()
-            await ctx.send(embed=(await self.bot.api.deviantart.browse_popular(query, category)).embed)
+    # @deviantart.command()
+    # async def popular(self, ctx, query: str = None, category: str = None):
+    #     """Get a Deviant by popularity."""
+    #     message = await ctx.send(
+    #         embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+    #                             ))
+    #     async with ctx.typing():
+    #         await asyncio.sleep(2.5)
+    #         await message.delete()
+    #         await ctx.send(embed=(await self.bot.api.deviantart.browse_popular(query, category)).embed)
 
     @commands.group(aliases=["robo", "rh"])
     async def robohash(self, ctx):

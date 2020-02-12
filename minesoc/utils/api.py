@@ -11,12 +11,12 @@ from random import choice
 class API:
     def __init__(self, bot):
         self.session = aiohttp.ClientSession()
-        self.deviantart = DeviantArt(self.session, bot)
+        # self.deviantart = DeviantArt(self.session, bot)
         self.animal = Animal(self.session)
         self.bot = bot
 
 
-class DeviantArt:
+"""class DeviantArt:
 
     class DeviantArtResponse:
         def __init__(self, response, error: json = None):
@@ -103,7 +103,7 @@ class DeviantArt:
                 embed = discord.Embed(color=discord.Color.red(), title="An error has occurred!",
                                       description=f"Error {r.status}\n`{error}`")
 
-                return self.DeviantArtResponse(response=None, error=embed)
+                return self.DeviantArtResponse(response=None, error=embed)"""
 
 
 class Animal:

@@ -35,8 +35,8 @@ class Minesoc(Bot):
         self._emojis = emojis.CustomEmojis()
         self.colors = config.ColorProxy()
 
-        self.da_id = self.config.deviantart_id
-        self.da_secret = self.config.deviantart_secret
+        # self.da_id = self.config.deviantart_id
+        # self.da_secret = self.config.deviantart_secret
 
         self.xp_values = Proxy({"min": 3, "max": 5})
 

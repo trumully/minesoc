@@ -1,6 +1,10 @@
 FROM python:3.8.1
-WORKDIR /minesoc
+
+WORKDIR /usr/src/app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
-RUN pip install -r requirements.txt
-COPY config.json .
-CMD ["python", "-m", "minesoc"]
+
+CMD [ "python", "-m", "minesoc"]

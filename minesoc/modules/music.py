@@ -90,8 +90,8 @@ class Music(commands.Cog):
         async with ctx.typing():
             if "spotify" in query:
 
-                credentials = spotipy.SpotifyClientCredentials(client_id=str(env.SPOTIFY_CLIENT_ID),
-                                                               client_secret=str(env.SPOTIFY_CLIENT_SECRET))
+                credentials = spotipy.SpotifyClientCredentials(client_id=self.bot.config.spotify_id,
+                                                               client_secret=self.bot.config.spotify_secret)
                 token = credentials.get_access_token()
                 sp = spotipy.Spotify(auth=token)
 

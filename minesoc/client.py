@@ -35,6 +35,9 @@ class Minesoc(Bot):
         self._emojis = emojis.CustomEmojis()
         self.colors = config.ColorProxy()
 
+        self.da_id = self.config.deviantart_id
+        self.da_secret = self.config.deviantart_secret
+
         self.xp_values = Proxy({"min": 3, "max": 5})
 
         self.status = self.loop.create_task(self.change_status())
@@ -119,17 +122,6 @@ class Minesoc(Bot):
             await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
                                                                  name=status))
             await asyncio.sleep(600)
-
-    async def get_da(self):
-        await self.wait_until_ready()
-        while not self.is_closed():
-            try:
-                self.da = deviantart.Api(self.config.DEVIANTART_CLIENT_ID, self.config.DEVIANTART_CLIENT_SECRET)
-                self.da_access_token = self.da.access_token
-            except Exception as e:
-                self.logger.warning("Failed to generate DeviantArt access token", exc_info=e)
-
-            await asyncio.sleep(3600)
 
     def get_owner(self):
         return self.get_user(self.owner_id)

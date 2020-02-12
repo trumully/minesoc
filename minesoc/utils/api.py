@@ -1,18 +1,11 @@
 import discord
 import json
 import aiohttp
-import asyncio
 import deviantart
 import re
 import time
 
-from libneko.aggregates import Proxy
-from dotenv import dotenv_values
 from random import choice
-from pathlib import Path
-
-env_path = Path(__file__).parent.parent / ".env"
-env_values = Proxy(dotenv_values(env_path))
 
 
 class API:
@@ -64,17 +57,18 @@ class DeviantArt:
 
             return embed
 
-    def __init__(self, session: aiohttp.ClientSession()):
+    def __init__(self, session: aiohttp.ClientSession(), bot):
         self.session = session
-        self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
+        self.bot = bot
+        self.da = deviantart.Api(self.bot.da_id, self.bot.da_secret)
         self.access_token = self.da.access_token
         self.base_url = "https://www.deviantart.com/api/v1/oauth2/"
         self.initial = time.time()
 
     async def browse_tags(self, tags: str):
-        time_diff = time.time() - self.initial
+        time_diff = time.time_ns() - self.initial
         if time_diff >= 60*60:
-            self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
+            self.da = deviantart.Api(self.bot.da_id, self.bot.da_secret)
             self.access_token = self.da.access_token
             self.initial = time.time()
 
@@ -92,11 +86,11 @@ class DeviantArt:
         if query:
             url += f"q={query.lower()}&"
 
-        time_diff = time.time() - self.initial
-        if time_diff >= 60 * 60:
-            self.da = deviantart.Api(env_values.DEVIANTART_CLIENT_ID, env_values.DEVIANTART_CLIENT_SECRET)
+        time_diff = time.time_ns() - self.initial
+        if time_diff >= 3600:
+            self.da = deviantart.Api(self.bot.da_id, self.bot.da_secret)
             self.access_token = self.da.access_token
-            self.initial = time.time()
+            self.initial = time.time_ns()
 
         url += f"timerange=1week&limit=50&access_token={self.access_token}"
         async with self.session.get(url) as r:

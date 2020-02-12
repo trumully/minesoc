@@ -11,7 +11,7 @@ from random import choice
 class API:
     def __init__(self, bot):
         self.session = aiohttp.ClientSession()
-        self.deviantart = DeviantArt(self.session)
+        self.deviantart = DeviantArt(self.session, bot)
         self.animal = Animal(self.session)
         self.bot = bot
 
@@ -70,7 +70,7 @@ class DeviantArt:
         if time_diff >= 60*60:
             self.da = deviantart.Api(self.bot.da_id, self.bot.da_secret)
             self.access_token = self.da.access_token
-            self.initial = time.time()
+            self.initial = time.time_ns()
 
         url = self.base_url + f"browse/tags?tag={tags.lower()}&limit=50&access_token={self.access_token}"
         async with self.session.get(url) as r:

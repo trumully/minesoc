@@ -290,6 +290,7 @@ class General(commands.Cog):
                                         f"{error}")
 
     async def cog_command_error(self, ctx, error):
+        await ctx.error(description=error)
         if isinstance(error, discord.Forbidden):
             await ctx.error(description="I don't have permission to do that! Make sure I have `Administrator`.")
 

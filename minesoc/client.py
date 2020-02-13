@@ -57,7 +57,7 @@ class Minesoc(Bot):
         await self._start()
 
     async def _start(self):
-        await super().start(self.config.TOKEN)
+        await super().start(self.config.token)
 
     async def close(self):
         try:

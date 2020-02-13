@@ -9,7 +9,7 @@ LEVEL_COOLDOWN = 120
 
 
 class Listeners(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot):
         self.bot = bot
         self.cog_dict = {}
         for cog in self.bot.cogs:

@@ -69,7 +69,7 @@ class Minesoc(Bot):
         with open("prefixes.json", "r") as f:
             prefixes = json.load(f)
 
-        prefixes.get(str(message.guild.id, self.config.PREFIX))
+        prefixes.get(str(message.guild.id, self.config.prefix))
 
         return commands.when_mentioned_or(prefixes[str(message.guild.id)])(self, message)
 

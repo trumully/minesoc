@@ -38,7 +38,7 @@ class Rank:
         size = (256, 256)
         profile_bytes = profile_bytes.resize(size)
         if bg is not None and bg != "default":
-            bg_img = Image.open(f"/opt/discord-v2/github/minesoc/backgrounds/{bg}.jpg")
+            bg_img = Image.open(f"backgrounds/{bg}.jpg")
             im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
         else:
             im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))

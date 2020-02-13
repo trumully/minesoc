@@ -11,6 +11,7 @@ from discord.ext import commands
 from discord.ext.commands import Bot
 from datetime import datetime
 from pathlib import Path
+from os import listdir
 from libneko.aggregates import Proxy
 from minesoc.utils import logger, emojis, context, config, api
 from random import randint
@@ -95,7 +96,7 @@ class Minesoc(Bot):
         return randint(self.xp_values.min, self.xp_values.max)
 
     def load_modules(self):
-        for module in Path(f"minesoc/{self.config.MODULES_PATH}").iterdir():
+        for module in listdir(f"minesoc/{self.config.modules_path}"):
             module = str(module)
             if module[-3:] == ".py" and module[:-3] != "__init__":
                 try:

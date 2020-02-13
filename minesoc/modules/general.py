@@ -72,7 +72,7 @@ class SpotifyImage:
             im_draw.text((175, 130), seconds_to_hms(track_duration), font=self.font, fill=(255, 255, 255, 255))
 
         im.paste(album_bytes, (5, 5))
-        spotify_logo = Image.open("/usr/src/bot/images/spotify-512.png")
+        spotify_logo = Image.open("images/spotify-512.png")
         spotify_logo = spotify_logo.resize((48, 48))
         im.paste(spotify_logo, (437, 15), spotify_logo)
 

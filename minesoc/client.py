@@ -3,8 +3,6 @@ import asyncio
 import logging
 import aiosqlite
 import json
-import deviantart
-import aiohttp
 import time
 
 from discord.ext import commands

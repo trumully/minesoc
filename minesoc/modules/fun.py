@@ -194,7 +194,7 @@ class Fun(commands.Cog):
 
     @commands.command(name="8ball")
     async def _8ball(self, ctx, *, query):
-        await ctx.send(f">{query}\n🎱: {choice(_8ball)}")
+        await ctx.send(f"> {query}\n🎱: {choice(_8ball)}")
 
     @commands.command()
     async def curse(self, ctx, member: discord.Member = None):

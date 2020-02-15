@@ -139,7 +139,7 @@ class Levels(commands.Cog):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
         available_bgs = []
 
-        for file in listdir("/opt/discord-v2/github/minesoc/backgrounds"):
+        for file in listdir("minesoc/backgrounds"):
             available_bgs.append(str(file[:-4]))
 
         if image not in available_bgs and image != "default" or image is None:

@@ -1,10 +1,14 @@
 import discord
 import asyncio
-import aiohttp.client
+import string
 
 from discord.ext import commands
-from io import BytesIO
-from random import getrandbits, choice
+from random import choice, choices, randint
+
+_8ball = ["It is certain.", "It is decidedly so.", "Without a doubt.", "Yes - definitely.", "You may rely on it.",
+          "As I see it, yes.", "Most likely.", "Outlook good.", "Yes.", "Signs point to yes", "Reply hazy, try again.",
+          "Ask again later.", "Better not tell you now.", "Cannot predict now.", "Concentrate and ask again",
+          "Don't count on it.", "My reply is no.", "My sources say no.", "Outlook not so good.", "Very doubtful"]
 
 
 def string2bits(s=''):
@@ -22,11 +26,18 @@ def measure_time(start, end):
 
 def seconds_to_ms(seconds):
     seconds = seconds % (24 * 3600)
-    hour = seconds // 3600
     seconds %= 3600
     minutes = seconds // 60
     seconds %= 60
     return "%02d:%02d" % (minutes, seconds)
+
+
+def robohash(query, set_num, author):
+    embed = discord.Embed(color=discord.Color.blue())
+    embed.set_image(url=f"https://robohash.org/{query}.png?set=set{set_num}")
+    embed.set_footer(text=f"Requested by {author.name} | Provided by robohash.org", icon_url=author.avatar_url)
+
+    return embed
 
 
 class Fun(commands.Cog):
@@ -40,9 +51,9 @@ class Fun(commands.Cog):
             await ctx.send_help(ctx.command)
 
     @binary.command()
-    async def a2b(self, ctx, *, string):
+    async def a2b(self, ctx, *, ascii_string):
         """Convert a string to binary"""
-        result = " ".join(str(i) for i in string2bits(string))
+        result = " ".join(str(i) for i in string2bits(ascii_string))
 
         message = ctx.message
         embed = discord.Embed()
@@ -118,11 +129,11 @@ class Fun(commands.Cog):
             await message.delete()
             await ctx.send(embed=(await self.bot.api.animal.fetch_dog(breed, sub_breed)).embed)
 
-    @commands.group(aliases=["da", "devart"])
-    async def deviantart(self, ctx):
-        """Offers options to browse DeviantArt."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+    # @commands.group(aliases=["da", "devart"])
+    # async def deviantart(self, ctx):
+    #     """Offers options to browse DeviantArt."""
+    #     if ctx.invoked_subcommand is None:
+    #         await ctx.send_help(ctx.command)
 
     # @deviantart.command()
     # async def tag(self, ctx, tag):
@@ -149,63 +160,46 @@ class Fun(commands.Cog):
     @commands.group(aliases=["robo", "rh"])
     async def robohash(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
+            query = ''.join(choices(string.ascii_uppercase + string.digits, k=3))
+            await ctx.send(embed=robohash(query, randint(1, 5), ctx.author))
 
     @robohash.command()
     async def robot(self, ctx, *, query: str = None):
-        query = query or getrandbits(128)
-        async with ctx.typing(), aiohttp.ClientSession() as session:
-            async with session.get(f"https://robohash.org/{query}") as response:
-                robo_bytes = await response.read()
-
-        buffer = BytesIO(robo_bytes)
-        await ctx.send(file=discord.File(fp=buffer, filename=f"{query}.png"))
+        query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
+        await ctx.send(embed=robohash(query, 1, ctx.author))
 
     @robohash.command()
     async def monster(self, ctx, *, query: str = None):
-        query = query or getrandbits(128)
-        async with ctx.typing(), aiohttp.ClientSession() as session:
-            async with session.get(f"https://robohash.org/{query}?set=set2") as response:
-                robo_bytes = await response.read()
-
-        buffer = BytesIO(robo_bytes)
-        await ctx.send(file=discord.File(fp=buffer, filename=f"{query}.png"))
+        query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
+        await ctx.send(embed=robohash(query, 2, ctx.author))
 
     @robohash.command()
     async def robohead(self, ctx, *, query: str = None):
-        query = query or getrandbits(128)
-        async with ctx.typing(), aiohttp.ClientSession() as session:
-            async with session.get(f"https://robohash.org/{query}?set=set3") as response:
-                robo_bytes = await response.read()
-
-        buffer = BytesIO(robo_bytes)
-        await ctx.send(file=discord.File(fp=buffer, filename=f"{query}.png"))
+        query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
+        await ctx.send(embed=robohash(query, 3, ctx.author))
 
     @robohash.command()
     async def kitten(self, ctx, *, query: str = None):
-        query = query or getrandbits(128)
-        async with ctx.typing(), aiohttp.ClientSession() as session:
-            async with session.get(f"https://robohash.org/{query}?set=set4") as response:
-                robo_bytes = await response.read()
-
-        buffer = BytesIO(robo_bytes)
-        await ctx.send(file=discord.File(fp=buffer, filename=f"{query}.png"))
+        query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
+        await ctx.send(embed=robohash(query, 4, ctx.author))
 
     @robohash.command()
     async def human(self, ctx, *, query: str = None):
-        query = query or getrandbits(128)
-        async with ctx.typing(), aiohttp.ClientSession() as session:
-            async with session.get(f"https://robohash.org/{query}?set=set5") as response:
-                robo_bytes = await response.read()
-
-        buffer = BytesIO(robo_bytes)
-        await ctx.send(file=discord.File(fp=buffer, filename=f"{query}.png"))
+        query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
+        await ctx.send(embed=robohash(query, 5, ctx.author))
 
     @commands.command(aliases=["choice"])
-    async def choose(self, ctx, *choices):
-        choices = [str(i) for i in choices]
+    async def choose(self, ctx, *, options):
+        await ctx.send(f"I choose: {choice(options)}")
 
-        await ctx.send(f"I choose: {choice(choices)}")
+    @commands.command(name="8ball")
+    async def _8ball(self, ctx, *, query):
+        await ctx.send(f">{query}\n🎱: {choice(_8ball)}")
+
+    @commands.command()
+    async def curse(self, ctx, member: discord.Member = None):
+        message = f"**{str(ctx.author)}** cursed **{str(member)}**!" if member else f"{str(ctx.author)} cursed themselves?"
+        await ctx.send(message, file=discord.File("videos/curse.mp4", filename="curse.mp4"))
 
 
 def setup(bot):

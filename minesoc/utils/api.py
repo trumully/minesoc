@@ -6,6 +6,7 @@ import re
 import time
 
 from random import choice
+from io import BytesIO
 
 
 class API:

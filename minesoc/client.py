@@ -4,6 +4,7 @@ import logging
 import aiosqlite
 import json
 import time
+import traceback
 
 from discord.ext import commands
 from discord.ext.commands import Bot
@@ -98,8 +99,8 @@ class Minesoc(Bot):
                 try:
                     self.load_extension(f"minesoc.{self.config.modules_path}.{module.replace('.py', '')}")
                 except Exception as ex:
-                    self.logger.warning(f"Module {module.strip('.py')} failed to load due to the following error: "
-                                        f"{type(ex).__name__}: {ex}")
+                    self.logger.warning(f"Module {module.strip('.py')} failed to load due to the following error: ",
+                                        exc_info=ex.with_traceback(ex.__traceback__))
         else:
             self.load_extension("jishaku")
 
@@ -109,14 +110,18 @@ class Minesoc(Bot):
         self._owner = self.get_user(self.owner_id)
         self.logger.info(f"I'm ready! Logged in as: {self.user} ({self.user.id})")
 
+    async def on_command_error(self, context, exception):
+        tb_str = traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)
+        await self.logger.error(msg=tb_str)
+
     async def change_status(self):
         await self.wait_until_ready()
-        status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users"])
+        status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users", "you"])
         while not self.is_closed():
             status = next(status_list, "m!help")
             if status == "m!help":
-                status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users"])
-            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.listening,
+                status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users", "you"])
+            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching,
                                                                  name=status))
             await asyncio.sleep(600)
 

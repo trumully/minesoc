@@ -127,6 +127,7 @@ class General(commands.Cog):
     @commands.command(aliases=["minesoc"])
     async def about(self, ctx: commands.Context):
         """General information about the bot"""
+        discord.Embed()
         guild_amount = len(self.bot.guilds)
         user_amount = len(self.bot.users)
         uptime = datetime.timedelta(microseconds=(time.time_ns() - self.bot.start_time) / 1000)
@@ -260,8 +261,8 @@ class General(commands.Cog):
     @spotify.command(name="get")
     async def spotify_get(self, ctx, spotify_link):
         async with ctx.typing():
-            credentials = spotipy.SpotifyClientCredentials(client_id=str(self.bot.config.SPOTIFY_CLIENT_ID),
-                                                           client_secret=str(self.bot.config.SPOTIFY_CLIENT_SECRET))
+            credentials = spotipy.SpotifyClientCredentials(client_id=str(self.bot.config.spotify_id),
+                                                           client_secret=str(self.bot.config.spotify_secret))
             token = credentials.get_access_token()
             spotify = spotipy.Spotify(auth=token)
 
@@ -288,11 +289,6 @@ class General(commands.Cog):
         if isinstance(error, spotipy.SpotifyException):
             await ctx.error(description=f"Could not provide given track or the Spotify authentication is invalid.\n"
                                         f"{error}")
-
-    async def cog_command_error(self, ctx, error):
-        await ctx.error(description=error)
-        if isinstance(error, discord.Forbidden):
-            await ctx.error(description="I don't have permission to do that! Make sure I have `Administrator`.")
 
 
 def setup(bot):

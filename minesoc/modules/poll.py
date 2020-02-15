@@ -44,16 +44,16 @@ class Polls(commands.Cog):
     @poll.command(name="tally")
     async def poll_tally(self, ctx, poll_id):
         msg = await ctx.fetch_message(poll_id)
-        if not msg.embeds:
-            return
+        """if not msg.embeds:
+            return"""
         embed = msg.embeds[0]
-        if msg.author != ctx.author:
+        """if msg.author != ctx.author:
             return
         if not embed["footer"]["text"].startswith("Poll ID:"):
-            return
+            return"""
 
-        unformatted_options = [x.strip() for x in embed['description'].split('\n')]
-        options = {x[:2]: x[3:] for x in unformatted_options}
+        options = self.polls[poll_id]
+        await ctx.send(self.polls)
 
         tally = {x: 0 for x in options.keys()}
         for reaction in msg.reactions:

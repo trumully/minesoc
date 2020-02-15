@@ -29,8 +29,10 @@ class Polls(commands.Cog):
         embed.description = "\n".join(f"{emoji} {option}" for emoji, option in options.items())
 
         message = await ctx.send(embed=embed)
+
         embed.set_footer(text=f"Poll ID: {message.id}")
         await message.edit(embed=embed)
+
         for emoji in options:
             await message.add_reaction(emoji)
 
@@ -57,7 +59,7 @@ class Polls(commands.Cog):
         result = discord.Embed(color=discord.Color.blue())
         result.title = f"Results for '{embed.title}'"
         result.add_field(name="Option", value="\n".join(self.polls[poll_id][key] for key in tally.keys()))
-        result.add_field(name="Amount", value="\n".join(tally[key] for key in tally.keys()))
+        result.add_field(name="Amount", value="\n".join(str(tally[key]) for key in tally.keys()))
 
         await ctx.send(embed=result)
         self.polls.pop(str(msg.id))

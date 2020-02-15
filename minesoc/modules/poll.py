@@ -58,7 +58,7 @@ class Polls(commands.Cog):
         if not embed["footer"]["text"].startswith("Poll ID:"):
             return
 
-        tally = await self.__get_result(poll_id)
+        tally = await self.__get_result(msg)
 
         poll_title = embed["title"]
         result = "\n".join(f"{self.polls[poll_id][key]} {tally[key]}" for key in tally.keys())

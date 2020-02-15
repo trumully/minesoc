@@ -14,7 +14,7 @@ class Polls(commands.Cog):
 
         embed = discord.Embed(color=discord.Color.blue())
         embed.title = name
-        embed.description = ["\n".join(f"{emoji} {option}") for emoji, option in options.items()]
+        embed.description = "\n".join(f"{emoji} {option}" for emoji, option in options.items())
 
         message = await channel.send(embed=embed)
         embed.set_footer(text=f"Poll ID: {message.id}")
@@ -35,7 +35,7 @@ class Polls(commands.Cog):
     @commands.group(name="poll")
     async def poll(self, ctx):
         if ctx.invoked_subcommand is None:
-            await ctx.help(ctx.command)
+            await ctx.send_help(ctx.command)
 
     @poll.command(name="create")
     async def poll_create(self, ctx, name, *options):

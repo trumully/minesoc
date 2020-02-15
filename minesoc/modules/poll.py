@@ -52,8 +52,10 @@ class Polls(commands.Cog):
     @poll.command(name="tally")
     async def poll_tally(self, ctx, poll_id):
         msg = await ctx.fetch_message(poll_id)
+        if not msg.embeds or msg.author != ctx.author:
+            return
         embed = msg.embeds[0]
-        if not msg or msg.author != ctx.author or not embed["footer"]["text"].startswith("Poll ID:"):
+        if not embed["footer"]["text"].startswith("Poll ID:"):
             return
 
         tally = await self.__get_result(poll_id)

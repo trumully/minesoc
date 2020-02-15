@@ -24,8 +24,8 @@ class Polls(commands.Cog):
 
         self.polls[message.id] = options
 
-    async def __get_result(self, message):
-        tally = {x: 0 for x in self.options.keys()}
+    async def __get_result(self, message, options):
+        tally = {x: 0 for x in options.keys()}
         for reaction in message.reactions:
             if reaction.emoji in self.options.keys():
                 tally[reaction.emoji] = reaction.count - 1 if reaction.count > 1 else 0  # omits the bot's vote.
@@ -58,7 +58,9 @@ class Polls(commands.Cog):
         if not embed["footer"]["text"].startswith("Poll ID:"):
             return
 
-        tally = await self.__get_result(msg)
+        unformatted_options = [x.strip() for x in embed['description'].split('\n')]
+        options = {x[:2]: x[3:] for x in unformatted_options}
+        tally = await self.__get_result(msg, options)
 
         poll_title = embed["title"]
         result = "\n".join(f"{self.polls[poll_id][key]} {tally[key]}" for key in tally.keys())

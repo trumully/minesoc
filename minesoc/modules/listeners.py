@@ -22,12 +22,11 @@ class Listeners(commands.Cog):
         cur_xp = user['xp']
         cur_lvl = user['lvl']
 
-        res = True if cur_xp >= round((4 * (cur_lvl ** 3) / 5)) else False
-        return res
+        return True if cur_xp >= round((4 * (cur_lvl ** 3) / 5)) else False
 
     async def bot_check(self, ctx):
         if not ctx.guild:
-            return True
+            return False
 
         if not self.bot.is_ready():
             await ctx.message.add_reaction("⏱️")

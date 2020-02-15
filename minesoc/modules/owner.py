@@ -20,7 +20,7 @@ class Owner(commands.Cog):
     async def load(self, ctx, module: str):
         """Load a module"""
         try:
-            self.bot.load_extension(f"minesoc.{self.bot.config.MODULES_PATH}.{module}")
+            self.bot.load_extension(f"minesoc.{self.bot.config.modules_path}.{module}")
         except commands.ExtensionNotFound:
             return await ctx.error(description=f"Module `{module}` not found.")
         except commands.ExtensionAlreadyLoaded:
@@ -36,7 +36,7 @@ class Owner(commands.Cog):
     async def unload(self, ctx, module: str):
         """Unload a module"""
         try:
-            self.bot.unload_extension(f"minesoc.{self.bot.config.MODULES_PATH}.{module}")
+            self.bot.unload_extension(f"minesoc.{self.bot.config.modules_path}.{module}")
         except commands.ExtensionNotFound:
             return await ctx.error(description=f"Module `{module}` not found.")
         else:
@@ -46,7 +46,7 @@ class Owner(commands.Cog):
     async def reload(self, ctx, module: str):
         """Reload a module"""
         try:
-            self.bot.reload_extension(f"minesoc.{self.bot.config.MODULES_PATH}.{module}")
+            self.bot.reload_extension(f"minesoc.{self.bot.config.modules_path}.{module}")
         except commands.ExtensionNotFound:
             return await ctx.error(description=f"Module `{module}` not found.")
         except Exception as ex:

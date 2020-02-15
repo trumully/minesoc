@@ -108,7 +108,7 @@ lavalink-logs/
 Lavalink.jar
 guild_config.json
 prefixes.json
-database.db
+config.json
 
 /backgrounds/
 /requirements.txt

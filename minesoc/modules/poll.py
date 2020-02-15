@@ -1,12 +1,13 @@
 import discord
 
 from discord.ext import commands
+from minesoc.utils import config
 
 
 class Polls(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.polls = {}
+        self.polls = config.File("polls.json")
 
     @commands.group(name="poll")
     async def poll(self, ctx):
@@ -33,7 +34,7 @@ class Polls(commands.Cog):
         for emoji in options:
             await message.add_reaction(emoji)
 
-        self.polls[message.id] = options
+        self.polls[ctx.guild.id] = {message.id: options}
         await ctx.send(self.polls)
 
     @poll.command(name="tally")
@@ -44,10 +45,10 @@ class Polls(commands.Cog):
         embed = msg.embeds[0]
         if msg.author != ctx.guild.me:
             return
-        if not embed["footer"]["text"].startswith("Poll ID:"):
+        if not embed.footer.text.startswith("Poll ID:"):
             return
 
-        options = self.polls[poll_id]
+        options = self.polls[ctx.guild.id][msg.id]
         await ctx.send(self.polls)
 
         tally = {x: 0 for x in options.keys()}
@@ -55,7 +56,7 @@ class Polls(commands.Cog):
             if reaction.emoji in options.keys():
                 tally[reaction.emoji] = reaction.count - 1 if reaction.count > 1 else 0
 
-        poll_title = embed["title"]
+        poll_title = embed.title
         result = "\n".join(f"{self.polls[poll_id][key]} {tally[key]}" for key in tally.keys())
         await ctx.send(f"Result of poll for '{poll_title}':\n{result}")
 

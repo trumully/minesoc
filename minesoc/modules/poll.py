@@ -34,7 +34,7 @@ class Polls(commands.Cog):
         for emoji in options:
             await message.add_reaction(emoji)
 
-        self.polls[ctx.guild.id] = {message.id: options}
+        self.polls[str(message.id)] = options
         await ctx.send(self.polls)
 
     @poll.command(name="tally")
@@ -48,7 +48,7 @@ class Polls(commands.Cog):
         if not embed.footer.text.startswith("Poll ID:"):
             return
 
-        options = self.polls[ctx.guild.id][msg.id]
+        options = self.polls[str(msg.id)]
         await ctx.send(self.polls)
 
         tally = {x: 0 for x in options.keys()}
@@ -59,6 +59,7 @@ class Polls(commands.Cog):
         poll_title = embed.title
         result = "\n".join(f"{self.polls[poll_id][key]} {tally[key]}" for key in tally.keys())
         await ctx.send(f"Result of poll for '{poll_title}':\n{result}")
+        self.polls.pop(str(msg.id))
 
 
 def setup(bot):

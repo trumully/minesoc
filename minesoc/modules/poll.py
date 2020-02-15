@@ -24,14 +24,6 @@ class Polls(commands.Cog):
 
         self.polls[message.id] = options
 
-    async def __get_result(self, message, options):
-        tally = {x: 0 for x in options.keys()}
-        for reaction in message.reactions:
-            if reaction.emoji in self.options.keys():
-                tally[reaction.emoji] = reaction.count - 1 if reaction.count > 1 else 0  # omits the bot's vote.
-
-        return tally
-
     @commands.group(name="poll")
     async def poll(self, ctx):
         if ctx.invoked_subcommand is None:
@@ -53,14 +45,20 @@ class Polls(commands.Cog):
     async def poll_tally(self, ctx, poll_id):
         msg = await ctx.fetch_message(poll_id)
         if not msg.embeds or msg.author != ctx.author:
+            await ctx.send("FALSE")
             return
         embed = msg.embeds[0]
         if not embed["footer"]["text"].startswith("Poll ID:"):
+            await ctx.send("NOT POLL")
             return
 
         unformatted_options = [x.strip() for x in embed['description'].split('\n')]
         options = {x[:2]: x[3:] for x in unformatted_options}
-        tally = await self.__get_result(msg, options)
+
+        tally = {x: 0 for x in options.keys()}
+        for reaction in msg.reactions:
+            if reaction.emoji in self.options.keys():
+                tally[reaction.emoji] = reaction.count - 1 if reaction.count > 1 else 0
 
         poll_title = embed["title"]
         result = "\n".join(f"{self.polls[poll_id][key]} {tally[key]}" for key in tally.keys())

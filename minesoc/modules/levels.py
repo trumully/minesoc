@@ -31,7 +31,6 @@ class Rank:
         if color == 0:
             RGB = (0, 0, 0)
         else:
-            color = str(color)
             RGB = tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
 
         profile_bytes = Image.open(profile_bytes)
@@ -89,33 +88,34 @@ class Levels(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def profile(self, ctx, member: discord.Member = None):
         """Change the appearance of your rank card."""
-        member = member or ctx.author
+        if ctx.invoked_subcommand is None:
+            member = member or ctx.author
 
-        if member.bot:
-            return
+            if member.bot:
+                return
 
-        rankcard = Rank()
+            rankcard = Rank()
 
-        member_id = str(member.id)
-        guild_id = str(ctx.guild.id)
+            member_id = str(member.id)
+            guild_id = str(ctx.guild.id)
 
-        self.bot.db.row_factory = aiosqlite.Row
-        async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl, cd, color, bg "
-                                       "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
-                                       {"u_id": member_id, "g_id": guild_id}) as cursor:
-            user = await cursor.fetchone()
+            self.bot.db.row_factory = aiosqlite.Row
+            async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl, cd, color, bg "
+                                           "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
+                                           {"u_id": member_id, "g_id": guild_id}) as cursor:
+                user = await cursor.fetchone()
 
-        if user:
-            async with ctx.typing(), aiohttp.ClientSession() as session:
-                async with session.get(f"{member.avatar_url}") as r:
-                    profile_bytes = await r.read()
+            if user:
+                async with ctx.typing(), aiohttp.ClientSession() as session:
+                    async with session.get(f"{member.avatar_url}") as r:
+                        profile_bytes = await r.read()
 
-            buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
-                                   user["color"], user["bg"])
+                buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
+                                       user["color"], user["bg"])
 
-            await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
-        else:
-            await ctx.send("Member hasn't received xp yet.")
+                await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
+            else:
+                await ctx.send("Member hasn't received xp yet.")
 
     @profile.command(pass_context=True, name="color", aliases=["colour"])
     async def profile_color(self, ctx, *, color: discord.Color):
@@ -139,7 +139,7 @@ class Levels(commands.Cog):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
         available_bgs = []
 
-        for file in listdir("minesoc/backgrounds"):
+        for file in listdir("backgrounds/"):
             available_bgs.append(str(file[:-4]))
 
         if image not in available_bgs and image != "default" or image is None:

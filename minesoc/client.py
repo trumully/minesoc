@@ -112,7 +112,7 @@ class Minesoc(Bot):
 
     async def on_command_error(self, context, exception):
         tb_str = traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)
-        await self.logger.error(msg=tb_str)
+        await self.logger.error(msg="".join(tb_str))
 
     async def change_status(self):
         await self.wait_until_ready()

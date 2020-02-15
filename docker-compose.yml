@@ -5,5 +5,3 @@ services:
     build: .
     restart: always
     container_name: "minesoc"
-    stdin_open: true
-    tty: true

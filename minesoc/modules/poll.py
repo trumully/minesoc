@@ -35,7 +35,6 @@ class Polls(commands.Cog):
             await message.add_reaction(emoji)
 
         self.polls[str(message.id)] = options
-        await ctx.send(self.polls)
 
     @poll.command(name="tally")
     async def poll_tally(self, ctx, poll_id):
@@ -49,16 +48,18 @@ class Polls(commands.Cog):
             return
 
         options = self.polls[str(msg.id)]
-        await ctx.send(self.polls)
 
         tally = {x: 0 for x in options.keys()}
         for reaction in msg.reactions:
             if reaction.emoji in options.keys():
                 tally[reaction.emoji] = reaction.count - 1 if reaction.count > 1 else 0
 
-        poll_title = embed.title
-        result = "\n".join(f"{self.polls[poll_id][key]} {tally[key]}" for key in tally.keys())
-        await ctx.send(f"Result of poll for '{poll_title}':\n{result}")
+        result = discord.Embed(color=discord.Color.blue())
+        result.title = f"Results for '{embed.title}'"
+        result.add_field(name="Option", value="\n".join(self.polls[poll_id][key] for key in tally.keys()))
+        result.add_field(name="Amount", value="\n".join(tally[key] for key in tally.keys()))
+
+        await ctx.send(embed=result)
         self.polls.pop(str(msg.id))
 
 

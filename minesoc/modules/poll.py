@@ -18,7 +18,7 @@ class Polls(commands.Cog):
 
         message = await channel.send(embed=embed)
         embed.set_footer(text=f"Poll ID: {message.id}")
-        await message.edit(message, embed=embed)
+        await message.edit(embed=embed)
         for emoji in options:
             await message.add_reaction(emoji)
 

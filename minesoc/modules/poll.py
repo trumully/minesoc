@@ -12,7 +12,7 @@ class Polls(commands.Cog):
     async def create_table(self):
         await self.bot.wait_until_ready()
 
-        query = "CREATE TABLE IF NOT EXISTS polls(id bigint NOT NULL UNIQUE, title text NOT NULL, options text ARRAY[10]"
+        query = "CREATE TABLE IF NOT EXISTS polls(id bigint NOT NULL UNIQUE, title text NOT NULL, options text ARRAY[10])"
 
         await self.bot.db.execute(query)
 

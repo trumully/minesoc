@@ -27,11 +27,6 @@ class Rank:
         self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
-        if color == 0:
-            RGB = (0, 0, 0)
-        else:
-            RGB = tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
-
         profile_bytes = Image.open(profile_bytes)
         size = (256, 256)
         profile_bytes = profile_bytes.resize(size)
@@ -42,7 +37,7 @@ class Rank:
             im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
 
         im_draw = ImageDraw.Draw(im)
-        im_draw.text((154*2, 5*2), user, font=self.font, fill=(RGB[0], RGB[1], RGB[2], 255))
+        im_draw.text((154*2, 5*2), user, font=self.font, fill=color)
 
         lvl_text = f"LEVEL {lvl}"
         im_draw.text((154*2, 37*2), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
@@ -52,9 +47,9 @@ class Rank:
 
         im_draw.rectangle((175*2, 95*2, 750, 125*2), fill=(64, 64, 64, 255))
         progress = xp / round((4 * (lvl ** 3) / 5))
-        im_draw.rectangle((175*2, 95*2, 350 + int(400 * progress), 125*2), fill=(RGB[0], RGB[1], RGB[2], 255))
+        im_draw.rectangle((175*2, 95*2, 350 + int(400 * progress), 125*2), fill=color)
 
-        im_draw.rectangle((0, 0, 148*2, 148*2), fill=(RGB[0], RGB[1], RGB[2], 255))
+        im_draw.rectangle((0, 0, 148*2, 148*2), fill=color)
 
         # Rounded square mask.
         # rounded_square = Image.open("/opt/discord-v2/github/minesoc/square-rounded-256.png")
@@ -98,7 +93,7 @@ class Levels(commands.Cog):
                         profile_bytes = await r.read()
 
                 buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
-                                       user["color"], user["bg"])
+                                       discord.Color(user["color"]).to_rgb(), user["bg"])
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
             else:

@@ -57,8 +57,8 @@ class Listeners(commands.Cog):
                                               author, guild)
 
             if not user:
-                await self.bot.db.execute("INSERT INTO levels(user_id, guild_id, lvl, xp, cd, color, bg) "
-                                          "VALUES($1, $2, 1, 0, $3, $4, 'default')", author, guild,
+                await self.bot.db.execute("INSERT INTO levels(user_id, guild_id, xp, lvl, cd, color, bg) "
+                                          "VALUES($1, $2, 0, 1, $3, $4, 'default')", author, guild,
                                           time.time(), 0xFFFFFF)
 
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2", author,

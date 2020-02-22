@@ -123,10 +123,6 @@ class Minesoc(Bot):
 
         self.logger.info(f"I'm ready! Logged in as: {self.user} ({self.user.id})")
 
-    async def on_command_error(self, context, exception):
-        tb_str = traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)
-        await self.logger.error(msg="".join(tb_str))
-
     async def change_status(self):
         await self.wait_until_ready()
         status_list = iter([f"{len(self.guilds)} guilds", f"{len(self.users)} users", "you"])

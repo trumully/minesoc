@@ -11,8 +11,8 @@ CREATE TABLE IF NOT EXISTS guild_blacklist(
 CREATE TABLE IF NOT EXISTS levels(
     user_id BIGINT,
     guild_id BIGINT,
-    lvl INT,
     xp BIGINT,
+    lvl INT,
     cd REAL,
     color INT,
     bg TEXT

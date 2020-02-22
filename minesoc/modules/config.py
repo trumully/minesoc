@@ -73,7 +73,7 @@ class Config(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.content in [f"<@!{self.bot.user.id}>", f"<@{self.bot.user.id}>"]:
             prefix = await self._fetch_prefix(message.guild.id)
-            await message.channel.send(f"Hello {message.author.mention}!\nMy prefix is `{prefix}`")
+            await message.channel.send(f"Hello {message.author.mention}!\nMy prefix is `{prefix.value}`")
 
     @commands.group(invoke_without_command=True)
     async def prefix(self, ctx: commands.Context):
@@ -133,6 +133,10 @@ class Config(commands.Cog):
     async def persistence(self, ctx):
         guild = ctx.guild.id
         config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
+
+        if not config:
+            await self.bot.db.execute("INSERT INTO persistence(guild, lvl_msg, lvls) VALUES($1, TRUE, TRUE)", guild)
+            config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
         do_msg = config["lvl_msg"]
         do_lvl = config["lvls"]

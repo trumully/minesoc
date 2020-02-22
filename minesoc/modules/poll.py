@@ -40,8 +40,8 @@ class Polls(commands.Cog):
         embed.set_footer(text=f"Poll ID: {message.id}")
         await message.edit(embed=embed)
 
-        for emoji in options:
-            await message.add_reaction(emoji)
+        for i in options:
+            await message.add_reaction(i[0])
 
         await self.bot.db.execute("INSERT INTO polls(id, title, options) VALUES($1, $2, $3)", message.id, name, options)
 

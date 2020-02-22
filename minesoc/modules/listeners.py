@@ -54,24 +54,24 @@ class Listeners(commands.Cog):
             author = str(message.author.id)
             guild = str(message.guild.id)
 
-            user = await self.bot.db.fetchrow("SELECT * FROM Levels WHERE user_id = $1 AND guild_id = $2",
+            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                               author, guild)
 
             xp = self.bot.xp_gain()
 
             if not user:
-                await self.bot.db.execute("INSERT INTO Levels(user_id, guild_id, xp, lvl, cd, color, bg) "
+                await self.bot.db.execute("INSERT INTO levels(user_id, guild_id, xp, lvl, cd, color, bg) "
                                           "VALUES($1, $2, 0, 1, $3, FFFFFF, default)", author, guild, time.time_ns())
-                user = await self.bot.db.fetchrow("SELECT * FROM Levels WHERE user_id = $1 AND guild_id = $2", author,
+                user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2", author,
                                                   guild)
 
-            await self.bot.db.execute("UPDATE Levels SET xp = $1 WHERE user_id = $2 AND guild_id = $3",
+            await self.bot.db.execute("UPDATE levels SET xp = $1 WHERE user_id = $2 AND guild_id = $3",
                                       user["xp"] + xp, author, guild)
 
             if self.lvl_up(user):
                 if do_lvl_msg:
                     await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
-                await self.bot.db.execute("UPDATE Levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
+                await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
                                           user["lvl"] + 1, author, guild)
 
     @commands.Cog.listener()

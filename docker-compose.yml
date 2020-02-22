@@ -3,12 +3,6 @@ version: "3"
 services:
   bot:
     build: .
+    network_mode: host
     restart: always
-    environment:
-      - DATABASE_URL=postgres://minesoc:@postgres:5432/minesoc
     container_name: "minesoc"
-
-networks:
-  default:
-    external:
-      name: postgres-default

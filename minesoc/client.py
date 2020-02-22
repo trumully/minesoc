@@ -4,6 +4,7 @@ import logging
 import asyncpg
 import json
 import time
+import traceback
 
 from discord.ext import commands
 from discord.ext.commands import Bot
@@ -105,7 +106,7 @@ class Minesoc(Bot):
         return randint(self.xp_values.min, self.xp_values.max)
 
     def load_modules(self):
-        for module in (self.path / self.config.modules_path).iterdir():
+        for module in (self.path / "minesoc" / self.config.modules_path).iterdir():
             if module.suffix == ".py" and module.name != "__init__.py":
                 try:
                     self.load_extension(f"minesoc.{self.config.modules_path}.{module.name[:-3]}")
@@ -114,7 +115,6 @@ class Minesoc(Bot):
                                         exc_info=ex.with_traceback(ex.__traceback__))
         else:
             self.load_extension("jishaku")
-
 
     async def on_ready(self):
         self.dev_guild = self.get_guild(int(self.config.dev_guild))

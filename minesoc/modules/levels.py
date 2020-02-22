@@ -3,7 +3,6 @@
 
 import json
 import discord
-import asyncpg
 import aiohttp.client
 import asyncio
 
@@ -73,7 +72,7 @@ class Rank:
 class Levels(commands.Cog):
     """Commands relating to the leveling system."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot):
         self.bot = bot
 
     @commands.group(invoke_without_command=True)
@@ -90,7 +89,7 @@ class Levels(commands.Cog):
             member_id = str(member.id)
             guild_id = str(ctx.guild.id)
 
-            user = await self.bot.db.fetchrow("SELECT * FROM Levels WHERE user_id = $1 AND guild_id = $2",
+            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                               member_id, guild_id)
 
             if user:
@@ -111,7 +110,7 @@ class Levels(commands.Cog):
         member = str(ctx.author.id)
         guild = str(ctx.guild.id)
         async with ctx.typing():
-            await self.bot.db.execute("UPDATE Levels SET color = $1 WHERE user_id = $2 AND guild_id = $3",
+            await self.bot.db.execute("UPDATE levels SET color = $1 WHERE user_id = $2 AND guild_id = $3",
                                       color.value, member, guild)
         embed = discord.Embed(color=color, title=f"Changed your color to `{color}`")
         await ctx.send(embed=embed)
@@ -130,7 +129,7 @@ class Levels(commands.Cog):
         member = str(ctx.author.id)
         guild = str(ctx.guild.id)
 
-        await self.bot.db.execute("UPDATE Levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
+        await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
                                   image, member, guild)
 
         await ctx.send(embed=discord.Embed(title=f"Changed your image to `{image}`" if image != "default" else
@@ -143,7 +142,7 @@ class Levels(commands.Cog):
         if guild_check:
             guild = str(ctx.guild.id)
 
-            users = await self.bot.db.fetch("SELECT * FROM Levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
+            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
 
             user_info = ""
             user_name = ""

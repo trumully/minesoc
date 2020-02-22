@@ -86,8 +86,8 @@ class Levels(commands.Cog):
 
             rankcard = Rank()
 
-            member_id = str(member.id)
-            guild_id = str(ctx.guild.id)
+            member_id = member.id
+            guild_id = ctx.guild.id
 
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                               member_id, guild_id)
@@ -140,7 +140,7 @@ class Levels(commands.Cog):
         """Shows the top 10 users of your guild."""
         guild_check = ctx.guild is not None
         if guild_check:
-            guild = str(ctx.guild.id)
+            guild = ctx.guild.id
 
             users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
 

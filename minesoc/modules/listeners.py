@@ -1,6 +1,5 @@
 import discord
 import json
-import asyncpg
 import time
 import asyncio
 
@@ -51,8 +50,8 @@ class Listeners(commands.Cog):
         do_lvl_msg = data["lvl_msg"]
 
         if do_lvl:
-            author = str(message.author.id)
-            guild = str(message.guild.id)
+            author = message.author.id
+            guild = message.guild.id
 
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                               author, guild)

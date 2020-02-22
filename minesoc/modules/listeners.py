@@ -38,6 +38,10 @@ class Listeners(commands.Cog):
         guild = int(message.guild.id)
         config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
+        if not config:
+            await self.bot.db.execute("INSERT INTO persistence(guild, lvl_msg, lvls) VALUES($1, TRUE, TRUE)", guild)
+            config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
+
         do_lvl = config["lvls"]
         do_msg = config["lvl_msg"]
 

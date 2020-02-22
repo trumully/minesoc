@@ -149,16 +149,16 @@ class Levels(commands.Cog):
         if guild_check:
             guild = ctx.guild.id
 
-            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC LIMIT 10", guild)
+            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
 
             user_info = ""
             user_name = ""
             rankings = ""
-            for idx, val in users:
+            for idx, val in zip(range(10), users):
                 user = self.bot.get_user(val["user_id"])
                 if user:
                     rank = idx + 1
-                    if rank == any(self.leaderboard_emojis.keys()):
+                    if rank in self.leaderboard_emojis.keys():
                         rank = self.leaderboard_emojis[rank]
                         if rank == 1:
                             top_user = f"Top Member: 🏆 **{user.name}**"

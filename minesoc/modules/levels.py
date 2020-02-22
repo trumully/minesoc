@@ -3,7 +3,7 @@
 
 import json
 import discord
-import aiosqlite
+import asyncpg
 import aiohttp.client
 import asyncio
 
@@ -75,15 +75,6 @@ class Levels(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.bot.loop.create_task(self.create_table())
-
-    async def create_table(self):
-        await self.bot.wait_until_ready()
-
-        query = "CREATE TABLE IF NOT EXISTS users(user_id INTEGER, guild_id INTEGER, xp INTEGER, " \
-                "lvl INTEGER, cd REAL, color INTEGER, bg TEXT)"
-
-        await self.bot.db.execute(query)
 
     @commands.group(invoke_without_command=True)
     async def profile(self, ctx, member: discord.Member = None):
@@ -99,11 +90,8 @@ class Levels(commands.Cog):
             member_id = str(member.id)
             guild_id = str(ctx.guild.id)
 
-            self.bot.db.row_factory = aiosqlite.Row
-            async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl, cd, color, bg "
-                                           "FROM users WHERE user_id=:u_id AND guild_id=:g_id",
-                                           {"u_id": member_id, "g_id": guild_id}) as cursor:
-                user = await cursor.fetchone()
+            user = await self.bot.db.fetchrow("SELECT * FROM Levels WHERE user_id = $1 AND guild_id = $2",
+                                              member_id, guild_id)
 
             if user:
                 async with ctx.typing(), aiohttp.ClientSession() as session:
@@ -123,14 +111,8 @@ class Levels(commands.Cog):
         member = str(ctx.author.id)
         guild = str(ctx.guild.id)
         async with ctx.typing():
-            self.bot.db.row_factory = aiosqlite.Row
-            async with self.bot.db.execute("SELECT user_id, guild_id, color "
-                                           "FROM users WHERE user_id=:user AND guild_id=:guild",
-                                           {"user": member, "guild": guild}) as cursor:
-                await cursor.execute("UPDATE users SET color=:color WHERE user_id=:user AND guild_id=:guild",
-                                     {"color": f"{color.value:0>6x}", "user": member, "guild": guild})
-                await self.bot.db.commit()
-
+            await self.bot.db.execute("UPDATE Levels SET color = $1 WHERE user_id = $2 AND guild_id = $3",
+                                      color.value, member, guild)
         embed = discord.Embed(color=color, title=f"Changed your color to `{color}`")
         await ctx.send(embed=embed)
 
@@ -148,12 +130,8 @@ class Levels(commands.Cog):
         member = str(ctx.author.id)
         guild = str(ctx.guild.id)
 
-        async with self.bot.db.execute("SELECT user_id, guild_id, bg FROM users "
-                                       "WHERE user_id=:user AND guild_id=:guild",
-                                       {"user": member, "guild": guild, "bg": image}) as cursor:
-            await cursor.execute("UPDATE users SET bg=:bg WHERE user_id=:user AND guild_id=:guild",
-                                 {"bg": image, "user": member, "guild": guild})
-            await self.bot.db.commit()
+        await self.bot.db.execute("UPDATE Levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
+                                  image, member, guild)
 
         await ctx.send(embed=discord.Embed(title=f"Changed your image to `{image}`" if image != "default" else
                        "Reset your profile background."))
@@ -163,20 +141,14 @@ class Levels(commands.Cog):
         """Shows the top 10 users of your guild."""
         guild_check = ctx.guild is not None
         if guild_check:
-            guild_id = str(ctx.guild.id)
+            guild = str(ctx.guild.id)
 
-            self.bot.db.row_factory = aiosqlite.Row
-            async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl "
-                                           "FROM users WHERE guild_id=:guild ORDER BY xp DESC",
-                                           {"guild": guild_id}) as cursor:
-                users = await cursor.fetchall()
-
-            users_list = [dict(row) for row in users if not None]
+            users = await self.bot.db.fetch("SELECT * FROM Levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
 
             user_info = ""
             user_name = ""
             rankings = ""
-            for idx, val in zip(range(10), users_list):
+            for idx, val in zip(range(10), users):
                 user = self.bot.get_user(val["user_id"])
                 if user:
                     rank = idx + 1

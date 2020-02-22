@@ -67,8 +67,8 @@ class Listeners(commands.Cog):
             xp = self.bot.xp_gain()
 
             if time.time() - user["cd"] >= LEVEL_COOLDOWN:
-                await self.bot.db.execute("UPDATE levels SET xp = $1 WHERE user_id = $2 AND guild_id = $3",
-                                          user["xp"] + xp, author, guild)
+                await self.bot.db.execute("UPDATE levels SET xp = $1, cd= $2 WHERE user_id = $3 AND guild_id = $4",
+                                          user["xp"] + xp, time.time(), author, guild)
 
             if self.lvl_up(user):
                 if do_lvl_msg:

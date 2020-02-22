@@ -14,6 +14,6 @@ CREATE TABLE IF NOT EXISTS levels(
     lvl INT,
     xp BIGINT,
     cd REAL,
-    color TEXT,
+    color INT,
     bg TEXT
 );

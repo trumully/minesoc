@@ -18,7 +18,7 @@ from random import randint
 class Minesoc(Bot):
     def __init__(self, **kwargs):
         self.config = config.File("config.json")
-        super().__init__(command_prefix=self.get_prefix, description="General purpose bot. WIP.",
+        super().__init__(command_prefix=self.config.default_prefix, description="General purpose bot. WIP.",
                          owner_id=int(self.config.owner), **kwargs)
 
         self.loop = asyncio.get_event_loop()
@@ -79,29 +79,6 @@ class Minesoc(Bot):
                 f"Initialized blacklist. {len(self.guild_blacklist)} guilds and {len(self.user_blacklist)} users "
                 f"blacklisted.")
 
-    async def get_prefix(self, message):
-        with open("prefixes.json", "r") as f:
-            prefixes = json.load(f)
-
-        return commands.when_mentioned_or(prefixes.get(str(message.guild.id), "m!"))(self, message)
-
-    async def on_message(self, message):
-        if isinstance(message.channel, discord.DMChannel):
-            return
-
-        ctx = await self.get_context(message)
-
-        with open("guild_config.json", "r") as f:
-            response = json.load(f)
-
-        data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
-
-        if ctx.valid:
-            if ctx.command.name in data["disabled_commands"]:
-                raise commands.DisabledCommand(message="Tried to invoke disabled command")
-            else:
-                await self.process_commands(message)
-
     def xp_gain(self):
         return randint(self.xp_values.min, self.xp_values.max)
 
@@ -156,5 +133,5 @@ class Minesoc(Bot):
             return self.get_owner()
 
     @property
-    def emojis(self):
+    def custom_emojis(self):
         return self._emojis

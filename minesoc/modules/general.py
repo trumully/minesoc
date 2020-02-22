@@ -112,7 +112,7 @@ class General(commands.Cog):
         """Pong!"""
         start_time = time.perf_counter()
         message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Pinging ...**"))
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.custom_emojis.typing} **Pinging ...**"))
         ack = (time.perf_counter() - start_time) * 1000
         heartbeat = self.bot.latency * 1000
 
@@ -132,17 +132,17 @@ class General(commands.Cog):
         user_amount = len(self.bot.users)
         uptime = datetime.timedelta(microseconds=(time.time_ns() - self.bot.start_time) / 1000)
         uptime = str(uptime).split(".")[0]
-        embed = discord.Embed(title=f"{self.bot.emojis.bot} About: {self.bot.user.name} | ID: {self.bot.user.id}",
+        embed = discord.Embed(title=f"{self.bot.custom_emojis.bot} About: {self.bot.user.name} | ID: {self.bot.user.id}",
                               description=f"{self.bot.description}\n"
                                           f"Serving **{user_amount} users** on **{guild_amount} guilds**",
                               color=self.bot.colors.neutral)
         embed.set_thumbnail(url=self.bot.user.avatar_url_as(static_format="png"))
         embed.add_field(name="Information", value=f"Owner: {self.bot.owner.mention}\nUptime: {uptime}")
-        embed.add_field(name="Versions", value=f"{self.bot.emojis.python} {platform.python_version()}\n"
-                                               f"{self.bot.emojis.discord} {discord.__version__}")
-        embed.add_field(name="Process", value=f"{self.bot.emojis.cpu} {psutil.cpu_percent()}% / "
+        embed.add_field(name="Versions", value=f"{self.bot.custom_emojis.python} {platform.python_version()}\n"
+                                               f"{self.bot.custom_emojis.discord} {discord.__version__}")
+        embed.add_field(name="Process", value=f"{self.bot.custom_emojis.cpu} {psutil.cpu_percent()}% / "
                                               f"{round(psutil.cpu_freq().current, 2)}MHz\n"
-                                              f"{self.bot.emojis.vram} {psutil.virtual_memory()[2]}%")
+                                              f"{self.bot.custom_emojis.vram} {psutil.virtual_memory()[2]}%")
         embed.add_field(name="Links", value=f"[Support Server]({self.bot.invite_url}) | [Invite]({self.bot.oauth()})",
                         inline=False)
 
@@ -157,10 +157,10 @@ class General(commands.Cog):
         num_offline = sum(member.status == discord.Status.offline and not member.bot for member in ctx.guild.members)
         num_dnd = sum(member.status == discord.Status.dnd and not member.bot for member in ctx.guild.members)
         num_idle = sum(member.status == discord.Status.idle and not member.bot for member in ctx.guild.members)
-        statuses = {f"{self.bot.emojis.status_online}": [num_online, "Online"],
-                    f"{self.bot.emojis.status_offline}": [num_offline, "Offline"],
-                    f"{self.bot.emojis.status_dnd}": [num_dnd, "DnD"],
-                    f"{self.bot.emojis.status_idle}": [num_idle, "Idle"]}
+        statuses = {f"{self.bot.custom_emojis.status_online}": [num_online, "Online"],
+                    f"{self.bot.custom_emojis.status_offline}": [num_offline, "Offline"],
+                    f"{self.bot.custom_emojis.status_dnd}": [num_dnd, "DnD"],
+                    f"{self.bot.custom_emojis.status_idle}": [num_idle, "Idle"]}
 
         status_list = [f"{key} **{value[0]}** {value[-1]}" for key, value in statuses.items() if value[0] >= 1]
 
@@ -176,11 +176,11 @@ class General(commands.Cog):
         number_of_bots = self.number_of_bots(ctx.guild.members)
         embed.add_field(name=f"Members `{len(ctx.guild.members)}`",
                         value=f"{' | '.join(status_list)} | "
-                              f"{self.bot.emojis.bot} **{number_of_bots}** {'Bots' if number_of_bots > 1 else 'Bot'}",
+                              f"{self.bot.custom_emojis.bot} **{number_of_bots}** {'Bots' if number_of_bots > 1 else 'Bot'}",
                         inline=True)
         embed.add_field(name=f"Channels `{self.number_of_channels(ctx.guild.channels)}`",
-                        value=f"{self.bot.emojis.text} {len(ctx.guild.text_channels)} | "
-                              f"{self.bot.emojis.voice} {len(ctx.guild.voice_channels)}",
+                        value=f"{self.bot.custom_emojis.text} {len(ctx.guild.text_channels)} | "
+                              f"{self.bot.custom_emojis.voice} {len(ctx.guild.voice_channels)}",
                         inline=False)
         if ctx.guild.features:
             embed.add_field(name="__Features__",
@@ -247,14 +247,14 @@ class General(commands.Cog):
                     buffer = card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), duration, end)
                     url = f"<https://open.spotify.com/track/{activity.track_id}>"
                     await ctx.message.delete()
-                    embed = discord.Embed(description=f"{self.bot.emojis.spotify} {user.mention} is listening to:\n**{url}**", color=activity.color)
+                    embed = discord.Embed(description=f"{self.bot.custom_emojis.spotify} {user.mention} is listening to:\n**{url}**", color=activity.color)
                     embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar_url)
                     file = discord.File(fp=buffer, filename="spotify.png")
                     embed.set_image(url="attachment://spotify.png")
                     return await ctx.send(embed=embed, file=file)
 
             await ctx.send(embed=discord.Embed(color=SPOTIFY_COLOR,
-                                               description=f"{self.bot.emojis.spotify} "
+                                               description=f"{self.bot.custom_emojis.spotify} "
                                                            f"{f'{user.mention} is' if user is not ctx.author else 'You are'} "
                                                            f"currently not listening to Spotify."))
 
@@ -281,7 +281,7 @@ class General(commands.Cog):
             duration = result["duration_ms"] / 1000
             buffer = card.draw(track_name, track_artists, SPOTIFY_COLOR.to_rgb(), BytesIO(album_bytes), duration)
             await ctx.message.delete()
-            await ctx.send(f"{self.bot.emojis.spotify} **{url}** {ctx.author.mention}",
+            await ctx.send(f"{self.bot.custom_emojis.spotify} **{url}** {ctx.author.mention}",
                            file=discord.File(fp=buffer, filename="spotify.png"))
 
     @spotify.error

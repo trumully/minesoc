@@ -111,7 +111,7 @@ class Fun(commands.Cog):
     async def cat(self, ctx):
         """Returns a random image of a cat."""
         message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.custom_emojis.typing} **Searching ...**"
                                 ))
         async with ctx.typing():
             await asyncio.sleep(2.5)
@@ -122,7 +122,7 @@ class Fun(commands.Cog):
     async def dog(self, ctx, breed: str = None, sub_breed: str = None):
         """Returns a random image of a dog."""
         message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
+            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.custom_emojis.typing} **Searching ...**"
                                 ))
         async with ctx.typing():
             await asyncio.sleep(2.5)

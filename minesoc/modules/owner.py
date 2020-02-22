@@ -100,7 +100,7 @@ class Owner(commands.Cog):
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         if target.id not in self.bot.blacklisted_guild or target.id not in self.bot.blacklisted_user:
             await self.add_blacklist(target.id, table, reason)
-            await ctx.message.add_reaction(self.bot.emojis.greenTick)
+            await ctx.message.add_reaction(self.bot.custom_emojis.greenTick)
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
@@ -110,7 +110,7 @@ class Owner(commands.Cog):
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         if target.id in self.bot.blacklisted_guild or target.id in self.bot.blacklisted_user:
             await self.remove_blacklist(target.id, table)
-            await ctx.message.add_reaction(self.bot.emojis.greenTick)
+            await ctx.message.add_reaction(self.bot.custom_emojis.greenTick)
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
 

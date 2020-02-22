@@ -69,8 +69,20 @@ class Levels(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.leaderboard_emojis = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+        self.bot.loop.create_task(self.create_table())
+
+    async def create_table(self):
+        await self.bot.wait_until_ready()
+
+        query = "CREATE TABLE IF NOT EXISTS levels(user_id BIGINT, guild_id BIGINT, xp BIGINT, lvl INT, cd REAL, " \
+                "color INT, bg TEXT)"
+
+        await self.bot.db.execute(query)
 
     @commands.group(invoke_without_command=True)
+    @commands.bot_has_permissions(attach_files=True)
     async def profile(self, ctx, member: discord.Member = None):
         """Change the appearance of your rank card."""
         if ctx.invoked_subcommand is None:
@@ -137,22 +149,19 @@ class Levels(commands.Cog):
         if guild_check:
             guild = ctx.guild.id
 
-            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
+            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC LIMIT 10", guild)
 
             user_info = ""
             user_name = ""
             rankings = ""
-            for idx, val in zip(range(10), users):
+            for idx, val in users:
                 user = self.bot.get_user(val["user_id"])
                 if user:
                     rank = idx + 1
-                    if rank == 1:
-                        rank = "🥇\n"
-                        top_user = f"Top Member: 🏆 **{user.name}**"
-                    elif rank == 2:
-                        rank = "🥈\n"
-                    elif rank == 3:
-                        rank = "🥉\n"
+                    if rank == any(self.leaderboard_emojis.keys()):
+                        rank = self.leaderboard_emojis[rank]
+                        if rank == 1:
+                            top_user = f"Top Member: 🏆 **{user.name}**"
                     else:
                         rank = f"#{rank}\n"
                     rankings += rank
@@ -169,86 +178,6 @@ class Levels(commands.Cog):
             embed.add_field(name="Level", value=user_info, inline=True)
 
             await ctx.send(embed=embed)
-
-    @commands.command()
-    @commands.has_permissions(manage_guild=True)
-    async def persistence(self, ctx):
-        with open("guild_config.json", "r") as f:
-            response = json.load(f)
-
-        data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
-
-        options = ["Edit persistence settings", "Edit level-up message settings"]
-        options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-        responses = ["1", "2", "exit"]
-        embed = discord.Embed(title=f"{ctx.guild.name} Persistence Settings",
-                              description=f"```py\nUsers gain {self.bot.xp_values.min}-{self.bot.xp_values.max} XP per message\n"
-                                          f"XP gain on this server is {'Enabled' if data['lvl_system'] else 'Disabled'}\n"
-                                          f"Level-Up messages on this server are {'Enabled' if data['lvl_msg'] else 'Disabled'}\n\n"
-                                          f"{''.join(options)}\n"
-                                          f"Type the appropriate number to access the menu.\nType 'exit' to leave the menu```")
-
-        menu = await ctx.send(embed=embed)
-
-        def check(author):
-            def inner_check(message):
-                if message.author != author:
-                    return False
-                if message.content in responses:
-                    return True
-                else:
-                    return False
-            return inner_check
-
-        try:
-            message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
-        except asyncio.TimeoutError:
-            await menu.delete()
-            await ctx.error(description="Action cancelled! You took too long.")
-        else:
-            await menu.delete()
-            await message.add_reaction(self.bot.emojis.greenTick)
-            if message.content == responses[0]:
-                options = ["Enable level system", "Disable level system"]
-                options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-                embed = discord.Embed(title=f"Edit Persistence Settings",
-                                      description=f"```py\n{''.join(options)}```\nType the appropriate number to access the menu.\nType 'exit' to leave the menu")
-                menu = await ctx.send(embed=embed)
-                try:
-                    message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
-                except asyncio.TimeoutError:
-                    await menu.delete()
-                    await ctx.error(description="Action cancelled! You took too long.")
-                else:
-                    await message.add_reaction(self.bot.emojis.greenTick)
-                    if message.content == responses[0]:
-                        data["lvl_system"] = True
-                    elif message.content == responses[1]:
-                        data["lvl_system"] = False
-
-                    await menu.delete()
-            elif message.content == responses[1]:
-                options = ["Enable level-up messages", "Disable level-up messages"]
-                options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-                embed = discord.Embed(title=f"Edit Level-Up message Settings",
-                                      description=f"```py\n{''.join(options)}```\nType the appropriate number to access the menu.\nType 'exit' to leave the menu")
-                menu = await ctx.send(embed=embed)
-                try:
-                    message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
-                except asyncio.TimeoutError:
-                    await menu.delete()
-                    await ctx.error(description="Action cancelled! You took too long.")
-                else:
-                    await message.add_reaction(self.bot.emojis.greenTick)
-                    if message.content == responses[0]:
-                        data["lvl_msg"] = True
-                    elif message.content == responses[1]:
-                        data["lvl_msg"] = False
-
-                    await menu.delete()
-
-        with open("guild_config.json", "w") as f:
-            json.dump(response, f, indent=4)
 
     @profile_color.error
     async def color_error(self, ctx, error):

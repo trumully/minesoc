@@ -11,12 +11,6 @@ LEVEL_COOLDOWN = 120
 class Listeners(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.cog_dict = {}
-        for cog in self.bot.cogs:
-            cog = self.bot.get_cog(cog)
-            _commands = cog.get_commands()
-            cog_name = cog.qualified_name
-            self.cog_dict[f"{cog_name}"] = [c.name for c in _commands]
 
     def lvl_up(self, user):
         cur_xp = user['xp']
@@ -41,17 +35,14 @@ class Listeners(commands.Cog):
         if message.author.bot or ctx.valid:
             return
 
-        with open("guild_config.json", "r") as f:
-            response = json.load(f)
+        guild = int(message.guild.id)
+        config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
-        data = response.get(str(ctx.guild.id), {"disabled_commands": [], "lvl_msg": True, "lvl_system": True})
-
-        do_lvl = data["lvl_system"]
-        do_lvl_msg = data["lvl_msg"]
+        do_lvl = config["lvls"]
+        do_msg = config["lvl_msg"]
 
         if do_lvl:
             author = int(message.author.id)
-            guild = int(message.guild.id)
 
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                               author, guild)
@@ -71,7 +62,7 @@ class Listeners(commands.Cog):
                                           user["xp"] + xp, time.time(), author, guild)
 
             if self.lvl_up(user):
-                if do_lvl_msg:
+                if do_msg:
                     await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
                 await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
                                           user["lvl"] + 1, author, guild)
@@ -130,26 +121,8 @@ class Listeners(commands.Cog):
                                                   f"[Support server]({self.bot.invite_url})")
                 await guild.owner.send(embed=embed)
                 await guild.leave()
-            except:
+            except Exception:
                 pass
-        else:
-            with open("prefixes.json", "r") as f:
-                prefixes = json.load(f)
-
-            prefixes[str(guild.id)] = "m!"
-
-            with open("prefixes.json", "w") as f:
-                json.dump(prefixes, f, indent=4)
-
-    @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
-        with open("prefixes.json", "r") as f:
-            prefixes = json.load(f)
-
-        prefixes.pop(str(guild.id))
-
-        with open("prefixes.json", "w") as f:
-            json.dump(prefixes, f, indent=4)
 
 
 def setup(bot):

@@ -28,7 +28,7 @@ class Minecraft(commands.Cog, name="Minecraft"):
         """
         Queries a specified Minecraft server gaining detailed information of the server.
         """
-        msg = await ctx.send(embed=discord.Embed(title=f"{self.bot.emojis.typing} Querying {address}",
+        msg = await ctx.send(embed=discord.Embed(title=f"{self.bot.custom_emojis.typing} Querying {address}",
                                                  color=self.bot.colors.neutral))
 
         async with ctx.typing():
@@ -54,7 +54,7 @@ class Minecraft(commands.Cog, name="Minecraft"):
                                       description=motd, timestamp=timestamp)
                 embed.set_footer(icon_url=ctx.author.avatar_url, text=ctx.author.name)
                 embed.set_thumbnail(url=favicon)
-                embed.add_field(name="Version", value=f"{self.bot.emojis.minecraft} {version}")
+                embed.add_field(name="Version", value=f"{self.bot.custom_emojis.minecraft} {version}")
                 embed.add_field(name="Players", value=players)
             else:
                 embed = discord.Embed(title=f"{address} may be offline or invalid", colour=self.bot.colors.neutral)

@@ -6,7 +6,7 @@ import asyncio
 class MinesocContext(commands.Context):
     """Custom Context"""
     async def error(self, **kwargs):
-        kwargs["description"] = f"{self.bot.emojis.cross} {kwargs['description']}"
+        kwargs["description"] = f"{self.bot.custom_emojis.cross} {kwargs['description']}"
         embed = discord.Embed(color=discord.Color.red(), **kwargs)
         embed.set_footer(
             text=f"Command executed by: {self.author} | {self.prefix}help {self.command.name} for detailed help",
@@ -20,7 +20,7 @@ class MinesocContext(commands.Context):
         return await self.send(embed=embed)
 
     async def success(self, description: str):
-        embed = discord.Embed(color=discord.Color.green(), description=f"{self.bot.emojis.greenTick} {description}")
+        embed = discord.Embed(color=discord.Color.green(), description=f"{self.bot.custom_emojis.greenTick} {description}")
         embed.set_footer(text=f"Command executed by: {self.author}",
                          icon_url=self.author.avatar_url_as(static_format="png"))
         return await self.send(embed=embed)
@@ -29,11 +29,11 @@ class MinesocContext(commands.Context):
         pass
 
     def switch(self, boolean: bool):
-        options = {True: self.bot.emojis.on, False: self.bot.emojis.off}
+        options = {True: self.bot.custom_emojis.on, False: self.bot.custom_emojis.off}
         return options[boolean]
 
     async def confirm(self, message: discord.Message, timeout=30):
-        REACTIONS = [self.bot.emojis.greenTick, self.bot.emojis.redTick]
+        REACTIONS = [self.bot.custom_emojis.greenTick, self.bot.custom_emojis.redTick]
 
         for r in REACTIONS:
             await message.add_reaction(r)
@@ -49,10 +49,10 @@ class MinesocContext(commands.Context):
         else:
             reaction = str(reaction)
 
-            if reaction == self.bot.emojis.greenTick:
+            if reaction == self.bot.custom_emojis.greenTick:
                 await message.delete()
                 return True
-            elif reaction == self.bot.emojis.redTick:
+            elif reaction == self.bot.custom_emojis.redTick:
                 await message.delete()
                 await self.error(description="Action declined.")
                 return False

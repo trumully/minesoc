@@ -1,13 +1,20 @@
 import discord
 
 from discord.ext import commands
-from minesoc.utils import config
 
 
 class Polls(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.polls = config.File("polls.json")
+
+        self.bot.loop.create_task(self.create_table())
+
+    async def create_table(self):
+        await self.bot.wait_until_ready()
+
+        query = "CREATE TABLE IF NOT EXISTS polls(id bigint NOT NULL UNIQUE, title text NOT NULL, options text ARRAY[10]"
+
+        await self.bot.db.execute(query)
 
     @commands.group(name="poll")
     async def poll(self, ctx):
@@ -22,11 +29,11 @@ class Polls(commands.Cog):
             return await ctx.send("Your poll can't have more than 10 options.")
 
         reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣', '6⃣', '7⃣', '8⃣', '9⃣', '🔟']
-        options = {reactions[x]: option for x, option in enumerate(options)}
+        options = [[reactions[x], option] for x, option in enumerate(options)]
 
         embed = discord.Embed(color=discord.Color.blue())
         embed.title = name
-        embed.description = "\n".join(f"{emoji} {option}" for emoji, option in options.items())
+        embed.description = "\n".join(f"{emoji} {option}" for emoji, option in options)
 
         message = await ctx.send(embed=embed)
 
@@ -36,7 +43,7 @@ class Polls(commands.Cog):
         for emoji in options:
             await message.add_reaction(emoji)
 
-        self.polls[str(message.id)] = options
+        await self.bot.db.execute("INSERT INTO polls(id, title, options) VALUES($1, $2, $3)", message.id, name, options)
 
     @poll.command(name="tally")
     async def poll_tally(self, ctx, poll_id):
@@ -49,20 +56,22 @@ class Polls(commands.Cog):
         if not embed.footer.text.startswith("Poll ID:"):
             return
 
-        options = self.polls[str(msg.id)]
+        poll = await self.bot.db.fetchrow("SELECT * FROM polls WHERE id=$1", msg.id)
 
-        tally = {x: 0 for x in options.keys()}
+        options = {i: j for i, j in poll["options"]}
+
+        tally = {x[0]: 0 for x in options.keys()}
         for reaction in msg.reactions:
             if reaction.emoji in options.keys():
                 tally[reaction.emoji] = reaction.count - 1 if reaction.count > 1 else 0
 
         result = discord.Embed(color=discord.Color.blue())
         result.title = f"Results for '{embed.title}'"
-        result.add_field(name="Option", value="\n".join(self.polls[poll_id][key] for key in tally.keys()))
+        result.add_field(name="Option", value="\n".join(str(options[key]) for key in tally.keys()))
         result.add_field(name="Amount", value="\n".join(str(tally[key]) for key in tally.keys()))
 
         await ctx.send(embed=result)
-        self.polls.pop(str(msg.id))
+        await self.bot.db.executemany("DELETE FROM polls WHERE id=$1", msg.id)
 
 
 def setup(bot):

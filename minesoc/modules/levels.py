@@ -107,8 +107,8 @@ class Levels(commands.Cog):
     @profile.command(pass_context=True, name="color", aliases=["colour"])
     async def profile_color(self, ctx, *, color: discord.Color):
         """Change the highlight color used of your rank card."""
-        member = str(ctx.author.id)
-        guild = str(ctx.guild.id)
+        member = ctx.author.id
+        guild = ctx.guild.id
         async with ctx.typing():
             await self.bot.db.execute("UPDATE levels SET color = $1 WHERE user_id = $2 AND guild_id = $3",
                                       color.value, member, guild)
@@ -126,8 +126,8 @@ class Levels(commands.Cog):
         if image not in available_bgs and image != "default" or image is None:
             return await ctx.send(f"List of available backgrounds:\n```{', '.join(available_bgs)}```")
 
-        member = str(ctx.author.id)
-        guild = str(ctx.guild.id)
+        member = ctx.author.id
+        guild = ctx.guild.id
 
         await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
                                   image, member, guild)

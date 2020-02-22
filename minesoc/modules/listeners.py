@@ -59,14 +59,14 @@ class Listeners(commands.Cog):
             if not user:
                 await self.bot.db.execute("INSERT INTO levels(user_id, guild_id, lvl, xp, cd, color, bg) "
                                           "VALUES($1, $2, 1, 0, $3, 'FFFFFF', 'default')", author, guild,
-                                          time.time_ns())
+                                          time.time())
 
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2", author,
                                               guild)
 
             xp = self.bot.xp_gain()
 
-            if time.time_ns() - user["cd"] >= LEVEL_COOLDOWN:
+            if time.time() - user["cd"] >= LEVEL_COOLDOWN:
                 await self.bot.db.execute("UPDATE levels SET xp = $1 WHERE user_id = $2 AND guild_id = $3",
                                           user["xp"] + xp, author, guild)
 

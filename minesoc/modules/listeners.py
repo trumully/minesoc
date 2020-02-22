@@ -1,7 +1,8 @@
 import discord
 import json
-import aiosqlite
+import asyncpg
 import time
+import asyncio
 
 from discord.ext import commands
 
@@ -22,7 +23,7 @@ class Listeners(commands.Cog):
         cur_xp = user['xp']
         cur_lvl = user['lvl']
 
-        return True if cur_xp >= round((4 * (cur_lvl ** 3) / 5)) else False
+        return bool(cur_xp >= round((4 * (cur_lvl ** 3) / 5)))
 
     async def bot_check(self, ctx):
         if not ctx.guild:
@@ -50,48 +51,92 @@ class Listeners(commands.Cog):
         do_lvl_msg = data["lvl_msg"]
 
         if do_lvl:
-            author_id = str(message.author.id)
-            guild_id = str(message.guild.id)
+            author = str(message.author.id)
+            guild = str(message.guild.id)
 
-            self.bot.db.row_factory = aiosqlite.Row
-            async with self.bot.db.execute("SELECT user_id, guild_id, xp, lvl, cd FROM users "
-                                           "WHERE user_id=:user AND guild_id=:guild",
-                                           {"user": author_id, "guild": guild_id}) as cur:
-                member = await cur.fetchone()
+            user = await self.bot.db.fetch("SELECT * FROM Levels WHERE user_id = $1 AND guild_id = $2", author, guild)
 
-                xp_gain = self.bot.xp_gain()
+            xp = self.bot.xp_gain()
 
-                if not member:
-                    await self.bot.db.execute("INSERT INTO users VALUES (:user, :guild, :xp, :lvl, :cd, :color, :bg)",
-                                              {"user": author_id, "guild": guild_id, "xp": xp_gain, "lvl": 1,
-                                               "cd": time.time(), "color": "ffffff", "bg": "default"})
-                    await self.bot.db.commit()
+            if not user:
+                await self.bot.db.execute("INSERT INTO Levels(user_id, guild_id, xp, lvl, cd, color, bg) "
+                                          "VALUES($1, $2, 0, 1, $3, FFFFFF, default)", author, guild, time.time_ns())
+                user = await self.bot.db.fetch("SELECT * FROM Levels WHERE user_id = $1 AND guild_id = $2", author,
+                                               guild)
 
-                time_diff = time.time() - member["cd"]
-                if time_diff >= LEVEL_COOLDOWN:
-                    await cur.execute("UPDATE users SET xp=:xp, cd=:cd WHERE "
-                                      "user_id=:user AND guild_id=:guild",
-                                      {"xp": member["xp"] + xp_gain, "user": author_id, "guild": guild_id,
-                                       "cd": time.time()})
-                    await self.bot.db.commit()
+            await self.bot.db.execute("UPDATE Levels SET xp = $1 WHERE user_id = $2 AND guild_id = $3",
+                                      user["xp"] + xp, author, guild)
 
-                if self.lvl_up(member):
-                    await cur.execute("UPDATE users SET lvl=:lvl WHERE user_id=:u_id AND guild_id=:g_id",
-                                      {"lvl": member["lvl"] + 1, "u_id": author_id, "g_id": guild_id})
-                    await self.bot.db.commit()
-                    if do_lvl_msg:
-                        await ctx.send(f"🆙 | **{self.bot.get_user(member['user_id']).name}** "
-                                       f"leveled up to **Level {member['lvl'] + 1}**!")
+            if self.lvl_up(user):
+                if do_lvl_msg:
+                    await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
+                await self.bot.db.execute("UPDATE Levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
+                                          user["lvl"] + 1, author, guild)
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.CheckFailure):
+            pass
+
+        elif isinstance(error, commands.DisabledCommand):
+            await ctx.error(description=f"`{ctx.command}` is currently disabled. Try again later.")
+
+        elif isinstance(error, (commands.BadArgument, commands.BadUnionArgument)):
+            await ctx.error(
+                description=f"A parse or conversion error occured with your arguments. Check your input and try "
+                            f"again. If you need help, use `{ctx.prefix}help "
+                            f"{ctx.command.qualified_name or ctx.command.name}`")
+
+        elif isinstance(error, discord.Forbidden):
+            await ctx.error(
+                description="I'm unable to perform this action. "
+                            "This could happen due to missing permissions for the bot.")
+
+        elif isinstance(error, commands.NotOwner):
+            await ctx.error(description="This command is only available to the bot developer.")
+
+        elif isinstance(error, commands.MissingRequiredArgument):
+            await ctx.error(
+                description=f"`{error.param.name}` is a required argument that is missing. For more help use "
+                            f"`{ctx.prefix}help {ctx.command.qualified_name or ctx.command.name}`")
+
+        elif isinstance(error, commands.MissingPermissions):
+            await ctx.error(description="You're not allowed to use this command.")
+
+        elif isinstance(error, commands.BotMissingPermissions):
+            await ctx.error(description="I don't have enough permissions to execute this command.")
+
+        elif isinstance(error, commands.NoPrivateMessage):
+            await ctx.error(description="This command is not usable in DM's.")
+
+        elif isinstance(error, commands.CommandOnCooldown):
+            await ctx.error(description=f"You're on cooldown! Retry in `{error.retry_after:,.2f}` seconds.")
+
+        elif isinstance(error, commands.CommandNotFound):
+            await ctx.message.add_reaction("❓")
+            await asyncio.sleep(15)
+            await ctx.message.remove_reaction(emoji="❓", member=ctx.guild.me)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        with open("prefixes.json", "r") as f:
-            prefixes = json.load(f)
+        if guild.id in self.bot.guild_blacklist:
+            try:
+                embed = discord.Embed(color=self.bot.colors.red,
+                                      description=f"Your guild / server tried to add me, but the ID is blacklisted. "
+                                                  f"If you wish to know the reason, join the "
+                                                  f"[Support server]({self.bot.invite_url})")
+                await guild.owner.send(embed=embed)
+                await guild.leave()
+            except:
+                pass
+        else:
+            with open("prefixes.json", "r") as f:
+                prefixes = json.load(f)
 
-        prefixes[str(guild.id)] = "m!"
+            prefixes[str(guild.id)] = "m!"
 
-        with open("prefixes.json", "w") as f:
-            json.dump(prefixes, f, indent=4)
+            with open("prefixes.json", "w") as f:
+                json.dump(prefixes, f, indent=4)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):

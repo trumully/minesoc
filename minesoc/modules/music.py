@@ -125,7 +125,7 @@ class Music(commands.Cog):
 
                 else:
                     if spotify_type == "album":
-                        results = sp.album(spotify_id)
+                        results = sp.album_tracks(spotify_id)
                     else:
                         results = sp.playlist_tracks(spotify_id)
 

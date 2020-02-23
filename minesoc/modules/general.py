@@ -36,24 +36,33 @@ def seconds_to_hms(seconds):
 class SpotifyImage:
     def __init__(self):
         self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
-        self.medium_font = ImageFont.truetype("arial-unicode-ms.ttf", 20)
         self.session = aiohttp.ClientSession()
 
     def draw(self, name, artists, color, album_bytes: BytesIO, track_duration=None, time_end=None):
-        r = color[0]
-        g = color[1]
-        b = color[2]
         album_bytes = Image.open(album_bytes)
         size = (160, 160)
         album_bytes = album_bytes.resize(size)
 
         w, h = (500, 170)
-        im = Image.new("RGBA", (w, h), (r, g, b, 255))
+        im = Image.new("RGBA", (w, h), color)
 
         im_draw = ImageDraw.Draw(im)
         off_x, off_y, w, h = (5, 5, 495, 165)
+
+        font_size = 1
+        max_size = 20
+        img_fraction = 0.774
+
+        medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+        while medium_font.getsize(name)[0] < img_fraction * im.size[0] and font_size < max_size + 1:
+            font_size += 1
+            medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+
+        font_size -= 1
+        medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+
         im_draw.rectangle((off_x, off_y, w, h), fill=(5, 5, 25))
-        im_draw.text((175, 15), name, font=self.medium_font, fill=(255, 255, 255, 255))
+        im_draw.text((175, 15), name, font=medium_font, fill=(255, 255, 255, 255))
 
         artist_text = ", ".join(artists)
         artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
@@ -72,6 +81,7 @@ class SpotifyImage:
             im_draw.text((175, 130), seconds_to_hms(track_duration), font=self.font, fill=(255, 255, 255, 255))
 
         im.paste(album_bytes, (5, 5))
+
         spotify_logo = Image.open("images/spotify-512.png")
         spotify_logo = spotify_logo.resize((48, 48))
         im.paste(spotify_logo, (437, 15), spotify_logo)
@@ -227,8 +237,8 @@ class General(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
-    @commands.cooldown(1, 5, commands.BucketType.user)
-    @commands.has_permissions(attach_files=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.bot_has_permissions(attach_files=True)
     async def spotify(self, ctx, user: discord.Member = None):
         user = ctx.author if not user else user
         if user.bot:

@@ -77,7 +77,7 @@ class Config(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     async def prefix(self, ctx: commands.Context):
-        """Configurate the guild's prefix"""
+        """Configure the guild's prefix"""
         prefix = await self._fetch_prefix(ctx.guild.id)
         p = self.bot.config.default_prefix
         m = False
@@ -131,6 +131,7 @@ class Config(commands.Cog):
     @commands.command()
     @checks.is_owner_or_has_permissions(manage_guild=True)
     async def persistence(self, ctx):
+        """Modify level related-systems of your guild."""
         guild = ctx.guild.id
         config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
@@ -171,7 +172,7 @@ class Config(commands.Cog):
             await ctx.error(description="Action cancelled! You took too long.")
         else:
             await menu.delete()
-            await message.add_reaction(self.bot.custom_emojis.greenTick)
+            await message.add_reaction(self.bot.custom_emojis.green_tick)
             if message.content == responses[0]:
                 options = ["Enable level system", "Disable level system"]
                 options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
@@ -184,7 +185,7 @@ class Config(commands.Cog):
                     await menu.delete()
                     await ctx.error(description="Action cancelled! You took too long.")
                 else:
-                    await message.add_reaction(self.bot.custom_emojis.greenTick)
+                    await message.add_reaction(self.bot.custom_emojis.green_tick)
 
                     if message.content == responses[0]:
                         await self.bot.db.execute("UPDATE persistence SET lvls=TRUE WHERE guild=$1", guild)
@@ -205,7 +206,7 @@ class Config(commands.Cog):
                     await menu.delete()
                     await ctx.error(description="Action cancelled! You took too long.")
                 else:
-                    await message.add_reaction(self.bot.custom_emojis.greenTick)
+                    await message.add_reaction(self.bot.custom_emojis.green_tick)
                     if message.content == responses[0]:
                         await self.bot.db.execute("UPDATE persistence SET lvl_msg=TRUE WHERE guild=$1", guild)
                     elif message.content == responses[1]:

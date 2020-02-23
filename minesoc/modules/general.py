@@ -51,12 +51,15 @@ class SpotifyImage:
 
         font_size = 1
         max_size = 20
-        img_fraction = 0.774
+        img_fraction = 0.75
 
         medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
-        while medium_font.getsize(name)[0] < img_fraction * im.size[0] and font_size < max_size + 1:
+        while medium_font.getsize(name)[0] < img_fraction * im.size[0]:
             font_size += 1
             medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+
+        if font_size >= max_size:
+            font_size = max_size
 
         font_size -= 1
         medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
@@ -240,6 +243,7 @@ class General(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.bot_has_permissions(attach_files=True)
     async def spotify(self, ctx, user: discord.Member = None):
+        """Get a user's Spotify status as an image."""
         user = ctx.author if not user else user
         if user.bot:
             return
@@ -270,6 +274,7 @@ class General(commands.Cog):
 
     @spotify.command(name="get")
     async def spotify_get(self, ctx, spotify_link):
+        """Get a Spotify track as an image."""
         async with ctx.typing():
             credentials = spotipy.SpotifyClientCredentials(client_id=str(self.bot.config.spotify_id),
                                                            client_secret=str(self.bot.config.spotify_secret))

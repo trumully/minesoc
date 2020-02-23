@@ -159,46 +159,54 @@ class Fun(commands.Cog):
 
     @commands.group(aliases=["robo", "rh"])
     async def robohash(self, ctx):
+        """Get randomly generated images from robohash.org"""
         if ctx.invoked_subcommand is None:
             query = ''.join(choices(string.ascii_uppercase + string.digits, k=3))
             await ctx.send(embed=robohash(query, randint(1, 5), ctx.author))
 
     @robohash.command()
     async def robot(self, ctx, *, query: str = None):
+        """Get a randomly generated robot from robohash.org"""
         query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
         await ctx.send(embed=robohash(query, 1, ctx.author))
 
     @robohash.command()
     async def monster(self, ctx, *, query: str = None):
+        """Get a randomly generated monster from robohash.org"""
         query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
         await ctx.send(embed=robohash(query, 2, ctx.author))
 
     @robohash.command()
     async def robohead(self, ctx, *, query: str = None):
+        """Get a randomly generated robohead from robohash.org"""
         query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
         await ctx.send(embed=robohash(query, 3, ctx.author))
 
     @robohash.command()
     async def kitten(self, ctx, *, query: str = None):
+        """Get a randomly generated kitten from robohash.org"""
         query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
         await ctx.send(embed=robohash(query, 4, ctx.author))
 
     @robohash.command()
     async def human(self, ctx, *, query: str = None):
+        """Get a randomly generated human from robohash.org"""
         query = query or ''.join(choices(string.ascii_uppercase + string.digits, k=3))
         await ctx.send(embed=robohash(query, 5, ctx.author))
 
     @commands.command(aliases=["choice"])
     async def choose(self, ctx, *, options):
+        """Having trouble making a decision? I'll make it for you!"""
         await ctx.send(f"I choose: {choice(options)}")
 
     @commands.command(name="8ball")
     async def _8ball(self, ctx, *, query):
-        await ctx.send(f"> {query}\n🎱: {choice(_8ball)}")
+        """"""
+        await ctx.send(f"> {query}\n🎱 {choice(_8ball)}")
 
     @commands.command()
     async def curse(self, ctx, member: discord.Member = None):
-        message = f"**{str(ctx.author)}** cursed **{str(member)}**!" if member else f"{str(ctx.author)} cursed themselves?"
+        message = f"**{str(ctx.author)}** cursed **{str(member)}**!" if member else f"**{str(ctx.author)}** cursed themself?"
         await ctx.send(message, file=discord.File("videos/curse.mp4", filename="curse.mp4"))
 
 

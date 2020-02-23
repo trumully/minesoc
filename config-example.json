@@ -1,0 +1,8 @@
+{
+    "token": "YOUR TOKEN",
+    "default_prefix": "YOUR DESIRED PREFIX",
+    "owner": "YOUR USER ID",
+    "modules_path": "modules",
+    "webhook_url": "YOUR WEBHOOK URL",
+    "dev_guild": "YOUR SECRET DEV GUILD"
+}

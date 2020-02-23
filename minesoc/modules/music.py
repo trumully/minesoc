@@ -37,7 +37,7 @@ class Music(commands.Cog):
                 search = f"ytsearch:{song} {artist} lyrics"
                 result = await player.node.get_tracks(search)
                 if result["tracks"]:
-                    if not player.is_playing:
+                    if not player.is_playing and i == 0:
                         await player.play(lavalink.AudioTrack.build(track=result["tracks"][0], requester=requester))
                     else:
                         player.add(track=result["tracks"][0], requester=requester)
@@ -159,7 +159,7 @@ class Music(commands.Cog):
                     embed.description = f"[{track['info']['title']}]({track['info']['uri']})"
                     player.add(requester=ctx.author.id, track=track)
 
-                player.store("track", track["info"]["uri"])
+            player.store("track", track["info"]["uri"])
 
         await ctx.send(embed=embed)
 

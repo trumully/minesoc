@@ -9,36 +9,41 @@ import math
 import asyncio
 
 from discord.ext import commands
-from libneko.aggregates import Proxy
-from dotenv import dotenv_values
-from pathlib import Path
-
-DIR = Path(__file__).parent.parent
-ENV_DIR = DIR / ".env"
-
-env = Proxy(dotenv_values(dotenv_path=ENV_DIR))
 
 url_rx = re.compile("https?://(?:www\\.)?.+")  # noqa: W605
-spotify_url = "https://open.spotify.com/playlist/X"
+spotify_url_rx = re.compile("https?://(?:open\\.)?.+")
 
 
 class Music(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.spotify_types = ["album", "playlist", "track"]
 
         if not hasattr(bot, "lavalink"):  # This ensures the client isn"t overwritten during cog reloads.
             bot.lavalink = lavalink.Client(bot.user.id, loop=self.bot.loop)
-            bot.lavalink.add_node("172.16.10.1", 53822, "youshallnotpass", "sydney", "default-node")
+            bot.lavalink.add_node(**self.bot.config.lavalink)
             bot.add_listener(bot.lavalink.voice_update_handler, "on_socket_response")
 
         bot.lavalink.add_event_hook(self.track_hook)
 
+    async def queue_spotify(self, tracks, player: lavalink.DefaultPlayer, requester):
+        for i in range(len(tracks)):
+            track = tracks[i]["track"]
+
+            song = track["name"]
+            artist = track["artists"][0]["name"]
+
+            if not track["is_local"]:
+                search = f"ytsearch:{song} {artist} lyrics"
+                result = await player.node.get_tracks(search)
+                if result["tracks"]:
+                    if not player.is_playing:
+                        await player.play(lavalink.AudioTrack.build(track=result["tracks"][0], requester=requester))
+                    else:
+                        player.add(track=result["tracks"][0], requester=requester)
+
     def cog_unload(self):
         self.bot.lavalink._event_hooks.clear()
-        try:
-            self.spotify_queue.cancel()
-        except AttributeError:
-            pass
 
     async def cog_before_invoke(self, ctx):
         guild_check = ctx.guild is not None
@@ -53,7 +58,7 @@ class Music(commands.Cog):
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CommandInvokeError):
-            await ctx.send(error.original)
+            await self.bot.logger.error(error.original)
             # The above handles errors thrown in this cog and shows them to the user.
             # This shouldn't be a problem as the only errors thrown in this cog are from `ensure_voice`
             # which contain a reason string, such as "Join a voice channel" etc. You can modify the above
@@ -69,7 +74,6 @@ class Music(commands.Cog):
             track = event.player.fetch("track")
             embed = discord.Embed(color=discord.Color.blurple(), title="Now Playing",
                                   description=f"[{event.track.title}]({track})")
-            await asyncio.sleep(0.5)
             await context.send(embed=embed)
 
     async def connect_to(self, guild_id: int, channel_id: str):
@@ -88,96 +92,39 @@ class Music(commands.Cog):
         query = query.strip("<>")
 
         async with ctx.typing():
-            if "spotify" in query:
-
+            if re.match(spotify_url_rx, query) or query.count(":") >= 2:
                 credentials = spotipy.SpotifyClientCredentials(client_id=self.bot.config.spotify_id,
                                                                client_secret=self.bot.config.spotify_secret)
                 token = credentials.get_access_token()
                 sp = spotipy.Spotify(auth=token)
 
-                embed = discord.Embed(color=discord.Color.blurple())
+                spotify_type = None
+                for i in self.spotify_types:
+                    if i in query:
+                        spotify_type = i
 
-                uri = "spotify:"
-                res = re.search("com/(.*)\\?si=", query).group(1)
-                res = res.replace("/", ":")
-                uri += res
-
-                if uri.split(":")[1] == "user":
-                    query_id = uri.split(":")[4]
-                    results = sp.playlist_tracks(query_id)
-                    playlist = True
+                if spotify_type is None:
+                    return await ctx.send("That link is invalid!")
                 else:
-                    query_id = uri.split(":")[2]
-                    if uri.split(":")[1] == "track":
-                        results = sp.track(query_id)
-                        playlist = False
-                    elif uri.split(":")[1] == "playlist":
-                        results = sp.playlist_tracks(query_id)
-                        playlist_query = sp.playlist(query_id, fields="name")
-                        playlist_name = playlist_query["name"]
-                        playlist = True
-                    elif uri.split(":")[1] == "album":
-                        results = sp.album_tracks(query_id)
-                        playlist_query = sp.album(query_id)
-                        playlist_name = playlist_query["name"]
-                        playlist = True
+                    if re.match(spotify_url_rx, query):
+                        spotify_id = re.search("track/(.*)\\?si=", query).group(1) if "?si=" in query else re.search("track/(.*)", query).group(1)
+                    else:
+                        spotify_id = query.split(":")[-1]
 
-                if playlist:
-                    tracks = results["items"]
-                    while results["next"]:
-                        results = sp.next(results)
-                        tracks.extend(results["items"])
+                    if spotify_type == "track":
+                        results = sp.track(spotify_id)
+                    else:
+                        if spotify_type == "album":
+                            results = sp.album(spotify_id)
+                        else:
+                            results = sp.playlist_tracks(spotify_id)
 
-                    async def spotify_queue():
-                        i = 0
-                        loop = True
-                        while loop:
-                            track = tracks[i]["track"]
-                            if not track:
-                                loop = False
-                            try:
-                                track["is_local"]
-                            except KeyError:
-                                search = f"ytsearch:{track['name']} {track['artists'][0]['name']} lyrics"
-                                res = await player.node.get_tracks(search)
-                                if res["tracks"]:
-                                    to_play = res["tracks"][0]
-                                    if i == 0 and not player.is_playing:
-                                        to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
-                                        await player.play(to_play)
-                                    else:
-                                        player.add(requester=ctx.author.id, track=to_play)
-                                i += 1
-                            else:
-                                if not track["is_local"]:
-                                    search = f"ytsearch:{track['name']} {track['artists'][0]['name']} lyrics"
-                                    res = await player.node.get_tracks(search)
-                                    if res["tracks"]:
-                                        to_play = res["tracks"][0]
-                                        if i == 0 and not player.is_playing:
-                                            to_play = lavalink.AudioTrack.build(track=to_play, requester=ctx.author.id)
-                                            await player.play(to_play)
-                                        else:
-                                            player.add(requester=ctx.author.id, track=to_play)
-                                i += 1
+                        tracks = results["items"]
+                        while results["next"]:
+                            results = sp.next(results)
+                            tracks.extend(results["items"])
 
-                    embed.title = "Playlist Enqueued!"
-                    embed.description = f"[{playlist_name}]({query}) - {len(tracks)} tracks"
-
-                    self.spotify_queue = self.bot.loop.create_task(spotify_queue())
-
-                else:
-                    track = results
-                    search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
-                    res = await player.node.get_tracks(search)
-                    if res["tracks"]:
-                        to_play = res["tracks"][0]
-                        player.add(requester=ctx.author.id, track=to_play)
-
-                    embed.title = "Track Enqueued!"
-                    embed.description = f"[{to_play['info']['title']}]({to_play['info']['uri']})"
-
-                player.store("track", track["info"]["uri"])
+                        self.bot.loop.create_task(self.queue_spotify(tracks, player, ctx.author.id))
 
             else:
                 if not re.match(url_rx, query) or not query.startswith("ytsearch:"):
@@ -243,8 +190,8 @@ class Music(commands.Cog):
         player.queue.clear()
         await player.stop()
         try:
-            self.spotify_queue.cancel()
-        except AttributeError:
+            self.queue_spotify.cancel()
+        except Exception:
             pass
         await ctx.send("⏹ | Stopped.")
 
@@ -390,8 +337,8 @@ class Music(commands.Cog):
         player.queue.clear()
         await player.stop()
         try:
-            self.spotify_queue.cancel()
-        except AttributeError:
+            self.queue_spotify.cancel()
+        except Exception:
             pass
         await self.connect_to(ctx.guild.id, None)
         await ctx.send("*⃣ | Disconnected.")

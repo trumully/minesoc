@@ -158,10 +158,10 @@ class Levels(commands.Cog):
                 user = self.bot.get_user(val["user_id"])
                 if user:
                     rank = idx + 1
-                    if rank in self.leaderboard_emojis.keys():
-                        rank = self.leaderboard_emojis[rank]
+                    if rank <= 3:
                         if rank == 1:
                             top_user = f"Top Member: 🏆 **{user.name}**"
+                        rank = self.leaderboard_emojis[rank]
                     else:
                         rank = f"#{rank}\n"
                     rankings += rank

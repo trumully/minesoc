@@ -92,20 +92,46 @@ class Music(commands.Cog):
         query = query.strip("<>")
 
         async with ctx.typing():
-            if re.match(spotify_url_rx, query) or query.count(":") >= 2:
-                credentials = spotipy.SpotifyClientCredentials(client_id=self.bot.config.spotify_id,
-                                                               client_secret=self.bot.config.spotify_secret)
-                token = credentials.get_access_token()
-                sp = spotipy.Spotify(auth=token)
-
+            if "open.spotify.com" in query or query.count(":") >= 2:
                 spotify_type = None
                 for i in self.spotify_types:
                     if i in query:
                         spotify_type = i
 
                 if spotify_type is None:
-                    return await ctx.send("That link is invalid!")
+                    if not re.match(url_rx, query) or not query.startswith("ytsearch:"):
+                        query = f"ytsearch:{query}"
+
+                    results = await player.node.get_tracks(query)
+
+                    if not results or not results["tracks"]:
+                        return await ctx.send("Nothing found!")
+
+                    embed = discord.Embed(color=discord.Color.blurple())
+
+                    if results["loadType"] == "PLAYLIST_LOADED":
+                        tracks = results["tracks"]
+
+                        for track in tracks:
+                            player.add(requester=ctx.author.id, track=track)
+
+                        embed.title = "Playlist Enqueued!"
+                        embed.description = f"{results['playlistInfo']['name']} - {len(tracks)} tracks"
+                    else:
+                        track = results["tracks"][0]
+                        embed.title = "Track Enqueued"
+                        embed.description = f"[{track['info']['title']}]({track['info']['uri']})"
+                        player.add(requester=ctx.author.id, track=track)
+
+                    player.store("track", track["info"]["uri"])
                 else:
+                    embed = discord.Embed(color=discord.Color.blurple())
+
+                    credentials = spotipy.SpotifyClientCredentials(client_id=self.bot.config.spotify_id,
+                                                                   client_secret=self.bot.config.spotify_secret)
+                    token = credentials.get_access_token()
+                    sp = spotipy.Spotify(auth=token)
+
                     if re.match(spotify_url_rx, query):
                         spotify_id = re.search("track/(.*)\\?si=", query).group(1) if "?si=" in query else re.search("track/(.*)", query).group(1)
                     else:
@@ -113,6 +139,17 @@ class Music(commands.Cog):
 
                     if spotify_type == "track":
                         results = sp.track(spotify_id)
+                        track = results
+                        search = f"ytsearch:{track['name']} {track['artists'][0]['name']}"
+                        res = await player.node.get_tracks(search)
+
+                        if res["tracks"]:
+                            to_play = res["tracks"][0]
+                            player.add(requester=ctx.author.id, track=to_play)
+
+                        embed.title = "Track Enqueued!"
+                        embed.description = f"[{to_play['info']['title']}]({to_play['info']['uri']})"
+
                     else:
                         if spotify_type == "album":
                             results = sp.album(spotify_id)
@@ -124,34 +161,7 @@ class Music(commands.Cog):
                             results = sp.next(results)
                             tracks.extend(results["items"])
 
-                        self.bot.loop.create_task(self.queue_spotify(tracks, player, ctx.author.id))
-
-            else:
-                if not re.match(url_rx, query) or not query.startswith("ytsearch:"):
-                    query = f"ytsearch:{query}"
-
-                results = await player.node.get_tracks(query)
-
-                if not results or not results["tracks"]:
-                    return await ctx.send("Nothing found!")
-
-                embed = discord.Embed(color=discord.Color.blurple())
-
-                if results["loadType"] == "PLAYLIST_LOADED":
-                    tracks = results["tracks"]
-
-                    for track in tracks:
-                        player.add(requester=ctx.author.id, track=track)
-
-                    embed.title = "Playlist Enqueued!"
-                    embed.description = f"{results['playlistInfo']['name']} - {len(tracks)} tracks"
-                else:
-                    track = results["tracks"][0]
-                    embed.title = "Track Enqueued"
-                    embed.description = f"[{track['info']['title']}]({track['info']['uri']})"
-                    player.add(requester=ctx.author.id, track=track)
-
-                player.store("track", track["info"]["uri"])
+                        self.task = self.bot.loop.create_task(self.queue_spotify(tracks, player, ctx.author.id))
 
         await ctx.send(embed=embed)
 
@@ -190,7 +200,7 @@ class Music(commands.Cog):
         player.queue.clear()
         await player.stop()
         try:
-            self.queue_spotify.cancel()
+            self.task.cancel()
         except Exception:
             pass
         await ctx.send("⏹ | Stopped.")
@@ -337,7 +347,7 @@ class Music(commands.Cog):
         player.queue.clear()
         await player.stop()
         try:
-            self.queue_spotify.cancel()
+            self.task.cancel()
         except Exception:
             pass
         await self.connect_to(ctx.guild.id, None)

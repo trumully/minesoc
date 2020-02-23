@@ -161,7 +161,7 @@ class Levels(commands.Cog):
                     if rank <= 3:
                         if rank == 1:
                             top_user = f"Top Member: 🏆 **{user.name}**"
-                        rank = self.leaderboard_emojis[rank]
+                        rank = f"{self.leaderboard_emojis[rank]}\n"
                     else:
                         rank = f"#{rank}\n"
                     rankings += rank

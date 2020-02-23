@@ -106,7 +106,7 @@ class Music(commands.Cog):
                 sp = spotipy.Spotify(auth=token)
 
                 if re.match(spotify_url_rx, query):
-                    spotify_id = re.search("track/(.*)\\?si=", query).group(1) if "?si=" in query else re.search("track/(.*)", query).group(1)
+                    spotify_id = re.search(f"{spotify_type}/(.*)\\?si=", query).group(1) if "?si=" in query else re.search(f"{spotify_type}/(.*)", query).group(1)
                 else:
                     spotify_id = query.split(":")[-1]
 

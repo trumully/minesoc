@@ -6,10 +6,6 @@ import discord
 from discord.ext import commands
 from datetime import datetime
 
-# TODO: Earn currency on message
-# TODO: Daily command
-# TODO: Daily command streaks
-
 
 class Economy(commands.Cog):
     def __init__(self, bot):

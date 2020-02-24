@@ -78,12 +78,18 @@ class Owner(commands.Cog):
     @commands.command(aliases=["sd", "logout"])
     async def shutdown(self, ctx: commands.Context):
         """Stops the bot, should restart it"""
-        await ctx.message.add_reaction("👌")
-        try:
-            await self.bot.logout()
-            await self.bot.close()
-        except Exception as ex:
-            await self.bot.logger.warning("An error occurred trying to logout", exc_info=ex)
+        if self.bot.lavalink.players:
+            message = "I'm currently playing music! Are you sure?"
+        else:
+            message = "Are you sure?"
+
+        if await ctx.confirm(message=message):
+            await ctx.message.add_reaction("👌")
+            try:
+                await self.bot.logout()
+                await self.bot.close()
+            except Exception as ex:
+                await self.bot.logger.warning("An error occurred trying to logout", exc_info=ex)
 
     @commands.group(invoke_without_command=True)
     async def blacklist(self, ctx: commands.Context):

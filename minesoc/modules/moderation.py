@@ -96,3 +96,7 @@ class Moderation(commands.Cog):
     async def hackban(self, ctx, user: int, *, reason: str = "No reason given."):
         await ctx.guild.ban(discord.Object(id=user), reason=reason)
         await ctx.success(description=f"Hackbanned user with the ID of `{user}` from the server.")
+
+
+def setup(bot):
+    bot.add_cog(Moderation(bot))

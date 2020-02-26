@@ -20,7 +20,7 @@ class Economy(commands.Cog):
     async def create_table(self):
         await self.bot.wait_until_ready()
 
-        query = "CREATE TABLE IF NOT EXISTS economy(user bigint UNIQUE NOT NULL, amount bigint DEFAULT 0, last_daily timestamp, streaks int)"
+        query = "CREATE TABLE IF NOT EXISTS economy(user BIGINT, amount BIGINT, last_daily TIMESTAMP, streaks INT)"
 
         await self.bot.db.execute(query)
 

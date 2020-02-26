@@ -30,10 +30,9 @@ class Owner(commands.Cog):
     async def get_blacklist_entry(self, id, table):
         if table == "user_blacklist":
             b = await self.bot.db.fetchrow("SELECT * FROM user_blacklist WHERE id=$1", id)
-            return b
         else:
             b = await self.bot.db.fetchrow("SELECT * FROM guild_blacklist WHERE id=$1", id)
-            return b
+        return b
 
     @commands.command()
     async def load(self, ctx, module: str):
@@ -78,18 +77,13 @@ class Owner(commands.Cog):
     @commands.command(aliases=["sd", "logout"])
     async def shutdown(self, ctx: commands.Context):
         """Stops the bot, should restart it"""
-        if self.bot.lavalink.players:
-            message = "I'm currently playing music! Are you sure?"
+        try:
+            await self.bot.logout()
+            await self.bot.close()
+        except Exception as ex:
+            await self.bot.logger.warning("An error occurred trying to logout", exc_info=ex)
         else:
-            message = "Are you sure?"
-
-        if await ctx.confirm(message=message):
             await ctx.message.add_reaction("👌")
-            try:
-                await self.bot.logout()
-                await self.bot.close()
-            except Exception as ex:
-                await self.bot.logger.warning("An error occurred trying to logout", exc_info=ex)
 
     @commands.group(invoke_without_command=True)
     async def blacklist(self, ctx: commands.Context):
@@ -101,9 +95,7 @@ class Owner(commands.Cog):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 
-        check = await self.bot.db.fetchrow(f"SELECT * FROM {table} WHERE id=$1", target.id)
-
-        if not check:
+        if target not in self.bot.user_blacklist and target not in self.bot.guild_blacklist:
             await self.add_blacklist(target.id, table, reason)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
         else:
@@ -114,9 +106,7 @@ class Owner(commands.Cog):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 
-        check = await self.bot.db.fetchrow(f"SELECT * FROM {table} WHERE id=$1", target.id)
-
-        if check:
+        if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
             await self.remove_blacklist(target.id, table)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
         else:
@@ -127,9 +117,7 @@ class Owner(commands.Cog):
         """Show a entry from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 
-        check = await self.bot.db.fetchrow(f"SELECT * FROM {table} WHERE id=$1", target.id)
-
-        if check:
+        if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
             entry = await self.get_blacklist_entry(target.id, table)
             embed = discord.Embed(color=self.bot.colors.neutral)
             if isinstance(target, discord.User):

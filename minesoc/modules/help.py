@@ -11,7 +11,7 @@ class CustomHelpCommand(commands.HelpCommand):
                 if self.context.bot.get_cog(i).get_commands()}
         cmd_str = "\n".join([f"__**{i}**__\n{' '.join(cmds[i])}" for i in cmds if cmds[i]])
         embed = discord.Embed(title=f"{self.context.bot.user.name} Help",
-                              description=f"Use `{self.clean_prefix}help [command] for more info on a command.`\n{cmd_str}",
+                              description=f"Use `{self.clean_prefix}help [command]` for more info on a command.\n\n{cmd_str}",
                               color=self.context.bot.colors.help)
         await self.context.send(embed=embed)
 
@@ -41,7 +41,6 @@ class CustomHelpCommand(commands.HelpCommand):
                               description=f"{cog.name} commands.\n"
                                           f"Use `{self.clean_prefix}help [command]` for more info on a command.",
                               color=self.context.bot.colors.help)
-        embed.add_field(name="Description:", value=cog.__doc__ if cog.__doc__ else "No description")
         embed.add_field(name="Commands:", value=f"```{', '.join(c.name for c in await self.filter_commands(cog.get_commands(), sort=True))}```")
 
     def get_command_signature(self, command):

@@ -9,9 +9,10 @@ class CustomHelpCommand(commands.HelpCommand):
     async def send_bot_help(self, mapping):
         cmds = {i: [f"`{c.name}`" for c in await self.filter_commands(self.context.bot.get_cog(i).get_commands(), sort=True)] for i in self.context.bot.cogs
                 if self.context.bot.get_cog(i).get_commands()}
-        embed = discord.Embed(title=f"{self.context.bot.user.name} Help")
-        embed.description = "\n".join(f"**{i}** ⤵\n{' '.join(cmds[i])}" for i in cmds)
-        _commands = await self.filter_commands(self.context.bot.commands, sort=True)
+        cmd_str = "\n".join([f"__**{i}**__\n{' '.join(cmds[i])}" for i in cmds if cmds[i]])
+        embed = discord.Embed(title=f"{self.context.bot.user.name} Help",
+                              description=f"Use `{self.clean_prefix}help [command] for more info on a command.`\n{cmd_str}",
+                              color=self.context.bot.colors.help)
         await self.context.send(embed=embed)
 
     async def send_command_help(self, command):
@@ -34,6 +35,14 @@ class CustomHelpCommand(commands.HelpCommand):
         embed.add_field(name="Available Subcommands:",
                         value=f"```\n{', '.join([command.name for command in group.commands])}\n```", inline=False)
         await self.context.send(embed=embed)
+
+    async def send_cog_help(self, cog):
+        embed = discord.Embed(title=f"{self.context.bot.user.name} Help",
+                              description=f"{cog.name} commands.\n"
+                                          f"Use `{self.clean_prefix}help [command]` for more info on a command.",
+                              color=self.context.bot.colors.help)
+        embed.add_field(name="Description:", value=cog.__doc__ if cog.__doc__ else "No description")
+        embed.add_field(name="Commands:", value=f"```{', '.join(c.name for c in await self.filter_commands(cog.get_commands(), sort=True))}```")
 
     def get_command_signature(self, command):
         return "{0.clean_prefix}{1.qualified_name} {1.signature}".format(self, command)

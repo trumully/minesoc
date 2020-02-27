@@ -1,67 +1,12 @@
 # levels.py
 # This extension handles level ups
 
-import json
 import discord
 import aiohttp.client
-import asyncio
 
 from discord.ext import commands
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageOps
 from os import listdir
-
-# leveling system
-# 1. create table if it doesn't exist
-# 2. assign each user xp, lvl, cd if they don't have it already
-# 3. fetch all users from server
-# 4. if a user's message count has increased and their cd time has elapsed, give them xp
-# 5. if this amount of xp results in a level up, send a level up message in channel of original message
-# 6. reset user's cd time
-
-
-class Rank:
-    def __init__(self):
-        self.font = ImageFont.truetype("arialbd.ttf", 28*2)
-        self.medium_font = ImageFont.truetype("arialbd.ttf", 22*2)
-        self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
-
-    def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
-        profile_bytes = Image.open(profile_bytes)
-        size = (256, 256)
-        profile_bytes = profile_bytes.resize(size)
-        if bg is not None and bg != "default":
-            bg_img = Image.open(f"backgrounds/{bg}.jpg")
-            im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
-        else:
-            im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
-
-        im_draw = ImageDraw.Draw(im)
-        im_draw.text((154*2, 5*2), user, font=self.font, fill=color)
-
-        lvl_text = f"LEVEL {lvl}"
-        im_draw.text((154*2, 37*2), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
-
-        xp_text = f"{xp}/{round((4 * (lvl ** 3) / 5))}"
-        im_draw.text((154*2, 62*2), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
-
-        im_draw.rectangle((175*2, 95*2, 750, 125*2), fill=(64, 64, 64, 255))
-        progress = xp / round((4 * (lvl ** 3) / 5))
-        im_draw.rectangle((175*2, 95*2, 350 + int(400 * progress), 125*2), fill=color)
-
-        im_draw.rectangle((0, 0, 148*2, 148*2), fill=color)
-
-        # Rounded square mask.
-        # rounded_square = Image.open("/opt/discord-v2/github/minesoc/square-rounded-256.png")
-        # im.paste(profile_bytes, (10*2, 10*2), rounded_square)
-
-        im.paste(profile_bytes, (10 * 2, 10 * 2))
-
-        buffer = BytesIO()
-        im.save(buffer, "png")
-        buffer.seek(0)
-
-        return buffer
 
 
 class Levels(commands.Cog):

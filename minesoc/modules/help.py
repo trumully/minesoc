@@ -1,19 +1,17 @@
 # help.py
 # This extension is used for the custom help command of the bot.
 import discord
-import json
 
 from discord.ext import commands
 
 
 class CustomHelpCommand(commands.HelpCommand):
     async def send_bot_help(self, mapping):
+        cogs = {i: self.context.bot.cogs[i] for i in self.context.bot.cogs}
+        cmds = {i: [f"```{c.name}```" for c in await self.filter_commands(self.context.bot.get_cog(i).get_commands(), sort=True)] for i in cogs}
+        embed = discord.Embed(title=f"{self.context.bot.user.name} Help")
+        embed.description = "\n".join(f"**{i}** ⤵\n{cmds[i]}" for i in cogs)
         _commands = await self.filter_commands(self.context.bot.commands, sort=True)
-        embed = discord.Embed(title=f"{self.context.bot.user.name} Help",
-                              description=f"Use `{self.clean_prefix}help [command]` for more info on a command.",
-                              color=self.context.bot.colors.help)
-        embed.add_field(name="Available Commands:",
-                        value=f"```\n{', '.join([command.name for command in _commands])}\n```")
         await self.context.send(embed=embed)
 
     async def send_command_help(self, command):

@@ -19,19 +19,6 @@ def bits2string(b=None):
     return ''.join([chr(int(x, 2)) for x in b])
 
 
-def measure_time(start, end):
-    duration = int(end - start)
-    return seconds_to_ms(duration)
-
-
-def seconds_to_ms(seconds):
-    seconds = seconds % (24 * 3600)
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60
-    return "%02d:%02d" % (minutes, seconds)
-
-
 def robohash(query, set_num, author):
     embed = discord.Embed(color=discord.Color.blue())
     embed.set_image(url=f"https://robohash.org/{query}.png?set=set{set_num}")
@@ -128,34 +115,6 @@ class Fun(commands.Cog):
             await asyncio.sleep(2.5)
             await message.delete()
             await ctx.send(embed=(await self.bot.api.animal.fetch_dog(breed, sub_breed)).embed)
-
-    # @commands.group(aliases=["da", "devart"])
-    # async def deviantart(self, ctx):
-    #     """Offers options to browse DeviantArt."""
-    #     if ctx.invoked_subcommand is None:
-    #         await ctx.send_help(ctx.command)
-
-    # @deviantart.command()
-    # async def tag(self, ctx, tag):
-    #     """Get a Deviant by tag."""
-    #     message = await ctx.send(
-    #         embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
-    #                             ))
-    #     async with ctx.typing():
-    #         await asyncio.sleep(2.5)
-    #         await message.delete()
-    #         await ctx.send(embed=(await self.bot.api.deviantart.browse_tags(tag)).embed)
-
-    # @deviantart.command()
-    # async def popular(self, ctx, query: str = None, category: str = None):
-    #     """Get a Deviant by popularity."""
-    #     message = await ctx.send(
-    #         embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.emojis.typing} **Searching ...**"
-    #                             ))
-    #     async with ctx.typing():
-    #         await asyncio.sleep(2.5)
-    #         await message.delete()
-    #         await ctx.send(embed=(await self.bot.api.deviantart.browse_popular(query, category)).embed)
 
     @commands.group(aliases=["robo", "rh"])
     async def robohash(self, ctx):

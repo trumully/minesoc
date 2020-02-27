@@ -3,103 +3,16 @@ import time
 import asyncio
 import psutil
 import platform
-import aiohttp
-import textwrap
 import datetime
 import spotipy
 import re
 
 from discord.ext import commands
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont
+from minesoc.utils import images
 
 
 SPOTIFY_COLOR = discord.Color(int(0x1db954))
-
-
-def measure_time(start, end):
-    duration = int(end - start)
-    return seconds_to_hms(duration)
-
-
-def seconds_to_hms(seconds):
-    seconds = seconds % (24 * 3600)
-    hour = seconds // 3600
-    seconds %= 3600
-    minutes = seconds // 60
-    seconds %= 60
-    if hour == 0:
-        return "%02d:%02d" % (minutes, seconds)
-    return "%d:%02d:%02d" % (hour, minutes, seconds)
-
-
-class SpotifyImage:
-    def __init__(self):
-        self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
-        self.session = aiohttp.ClientSession()
-
-    def draw(self, name, artists, color, album_bytes: BytesIO, track_duration=None, time_end=None):
-        album_bytes = Image.open(album_bytes)
-        size = (160, 160)
-        album_bytes = album_bytes.resize(size)
-
-        w, h = (500, 170)
-        im = Image.new("RGBA", (w, h), color)
-
-        im_draw = ImageDraw.Draw(im)
-        off_x, off_y, w, h = (5, 5, 495, 165)
-
-        font_size = 1
-        max_size = 20
-        img_fraction = 0.75
-
-        medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
-        while medium_font.getsize(name)[0] < img_fraction * im.size[0]:
-            font_size += 1
-            medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
-
-        if font_size >= max_size:
-            font_size = max_size
-
-        font_size -= 1
-        medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
-
-        im_draw.rectangle((off_x, off_y, w, h), fill=(5, 5, 25))
-        im_draw.text((175, 15), name, font=medium_font, fill=(255, 255, 255, 255))
-
-        artist_text = ", ".join(artists)
-        artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
-        im_draw.text((175, 45), artist_text, font=self.font, fill=(255, 255, 255, 255))
-
-        if time_end is not None and track_duration is not None:
-            now = datetime.datetime.utcnow()
-            percentage_played = 1 - (time_end - now).total_seconds() / track_duration.total_seconds()
-            im_draw.rectangle((175, 130, 375, 125), fill=(64, 64, 64, 255))
-            im_draw.rectangle((175, 130, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
-
-            track_duration = track_duration.total_seconds()
-            duration = f"{seconds_to_hms(track_duration * percentage_played)} / {seconds_to_hms(track_duration)}"
-            im_draw.text((175, 130), duration, font=self.font, fill=(255, 255, 255, 255))
-        else:
-            im_draw.text((175, 130), seconds_to_hms(track_duration), font=self.font, fill=(255, 255, 255, 255))
-
-        im.paste(album_bytes, (5, 5))
-
-        spotify_logo = Image.open("images/spotify-512.png")
-        spotify_logo = spotify_logo.resize((48, 48))
-        im.paste(spotify_logo, (437, 15), spotify_logo)
-
-        buffer = BytesIO()
-        im.save(buffer, "png")
-        buffer.seek(0)
-
-        return buffer
-
-    async def fetch_cover(self, cover_url):
-        async with self.session as s:
-            async with s.get(cover_url) as r:
-                if r.status == 200:
-                    return await r.read()
 
 
 class General(commands.Cog):
@@ -251,7 +164,7 @@ class General(commands.Cog):
         async with ctx.typing():
             for activity in user.activities:
                 if isinstance(activity, discord.Spotify):
-                    card = SpotifyImage()
+                    card = images.SpotifyImage(self.bot)
 
                     album_bytes = await card.fetch_cover(activity.album_cover_url)
                     color = activity.color.to_rgb()
@@ -287,7 +200,7 @@ class General(commands.Cog):
             uri += res
             track = uri.split(":")[2]
 
-            card = SpotifyImage()
+            card = images.SpotifyImage(self.bot)
             result = spotify.track(track)
             url = f"<{result['external_urls']['spotify']}>"
             album_bytes = await card.fetch_cover(f"{result['album']['images'][0]['url']}")
@@ -295,9 +208,13 @@ class General(commands.Cog):
             track_artists = (i["name"] for i in result["artists"])
             duration = result["duration_ms"] / 1000
             buffer = card.draw(track_name, track_artists, SPOTIFY_COLOR.to_rgb(), BytesIO(album_bytes), duration)
+            embed = discord.Embed(color=SPOTIFY_COLOR, description=f"{self.bot.custom_emojis.spotify} **{url}**")
+            embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar_url)
+            file = discord.File(fp=buffer, filename="spotify.png")
+            embed.set_image(url="attachment://spotify.png")
+
             await ctx.message.delete()
-            await ctx.send(f"{self.bot.custom_emojis.spotify} **{url}** {ctx.author.mention}",
-                           file=discord.File(fp=buffer, filename="spotify.png"))
+            await ctx.send(embed=embed, file=file)
 
     @spotify.error
     async def spotify_error(self, ctx, error):

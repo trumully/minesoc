@@ -26,8 +26,9 @@ class Rank:
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
-        size = (240, 240)
+        size = (256, 256)
         profile_bytes = profile_bytes.resize(size)
+
         if bg is not None and bg != "default":
             bg_img = Image.open(f"backgrounds/{bg}.jpg")
             im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
@@ -47,15 +48,15 @@ class Rank:
         progress = xp / xp_to_next
 
         # XP progress
-        xp_text = f"{xp if xp < 1000 else human_format(xp)} / {xp_to_next if xp_to_next < 1000 else human_format(xp_to_next)}"
+        xp_text = f"{xp} / {xp_to_next}"
         im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
         # XP progress bar
         im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
-        im_draw.rectangle((350, 190, 350 + int(400 * progress), 125*2), fill=color)
+        im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
 
         # Avatar border
-        im_draw.ellipse((0, 0, 280, 280), fill=color)
+        im_draw.ellipse((0, 0, 296, 296), fill=color)
 
         # Avatar
         circle = Image.open("images/circle.png")
@@ -108,7 +109,7 @@ class Levels(commands.Cog):
                     async with session.get(f"{member.avatar_url}") as r:
                         profile_bytes = await r.read()
 
-                buffer = rankcard.draw(member.display_name, user["lvl"], user["xp"], BytesIO(profile_bytes),
+                buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
                                        discord.Color(user["color"]).to_rgb(), user["bg"])
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))

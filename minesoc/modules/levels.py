@@ -9,7 +9,6 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from os import listdir
 
-
 # leveling system
 # 1. create table if it doesn't exist
 # 2. assign each user xp, lvl, cd if they don't have it already
@@ -19,61 +18,11 @@ from os import listdir
 # 6. reset user's cd time
 
 
-def rounded_rectangle(self: ImageDraw, xy, corner_radius, fill=None, outline=None):
-    upper_left_point = xy[0]
-    bottom_right_point = xy[1]
-    self.rectangle(
-        [
-            (upper_left_point[0], upper_left_point[1] + corner_radius),
-            (bottom_right_point[0], bottom_right_point[1] - corner_radius)
-        ],
-        fill=fill,
-        outline=outline
-    )
-    self.rectangle(
-        [
-            (upper_left_point[0] + corner_radius, upper_left_point[1]),
-            (bottom_right_point[0] - corner_radius, bottom_right_point[1])
-        ],
-        fill=fill,
-        outline=outline
-    )
-    self.pieslice(
-        [upper_left_point, (upper_left_point[0] + corner_radius * 2, upper_left_point[1] + corner_radius * 2)],
-        180,
-        270,
-        fill=fill,
-        outline=outline
-        )
-
-    self.pieslice(
-        [(bottom_right_point[0] - corner_radius * 2, bottom_right_point[1] - corner_radius * 2), bottom_right_point],
-        0,
-        90,
-        fill=fill,
-        outline=outline
-        )
-    self.pieslice([(upper_left_point[0], bottom_right_point[1] - corner_radius * 2),
-                   (upper_left_point[0] + corner_radius * 2, bottom_right_point[1])],
-                  90,
-                  180,
-                  fill=fill,
-                  outline=outline
-                  )
-    self.pieslice([(bottom_right_point[0] - corner_radius * 2, upper_left_point[1]),
-                   (bottom_right_point[0], upper_left_point[1] + corner_radius * 2)],
-                  270,
-                  360,
-                  fill=fill,
-                  outline=outline
-                  )
-
-
 class Rank:
     def __init__(self):
-        self.font = ImageFont.truetype("arialbd.ttf", 28 * 2)
-        self.medium_font = ImageFont.truetype("arialbd.ttf", 22 * 2)
-        self.small_font = ImageFont.truetype("arialbd.ttf", 16 * 2)
+        self.font = ImageFont.truetype("arialbd.ttf", 28*2)
+        self.medium_font = ImageFont.truetype("arialbd.ttf", 22*2)
+        self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
@@ -86,8 +35,6 @@ class Rank:
             im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
 
         im_draw = ImageDraw.Draw(im)
-        im_draw.rounded_rectangle = rounded_rectangle
-
         im_draw.text((308, 10), user, font=self.font, fill=color)
 
         lvl_text = f"LEVEL {lvl}"
@@ -96,15 +43,11 @@ class Rank:
         xp_text = f"{xp}/{round((4 * (lvl ** 3) / 5))}"
         im_draw.text((308, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
-        # im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
-        im_draw.rounded_rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255), corner_radius=100)
+        im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
         progress = xp / round((4 * (lvl ** 3) / 5))
-
-        # im_draw.rectangle((350, 190, 350 + int(400 * progress), 125 * 2), fill=color)
-        im_draw.rounded_rectangle((350, 190, 350 + int(400 * progress), 125 * 2), fill=color, corner_radius=100)
+        im_draw.rectangle((350, 190, 350 + int(400 * progress), 125*2), fill=color)
 
         im_draw.ellipse((0, 0, 296, 296), fill=color)
-        # im_draw.rectangle((0, 0, 296, 296), fill=color)
 
         circle = Image.open("images/circle.png")
         im.paste(profile_bytes, (20, 20), circle)
@@ -192,7 +135,7 @@ class Levels(commands.Cog):
                                   image, member, guild)
 
         await ctx.send(embed=discord.Embed(title=f"Changed your image to `{image}`" if image != "default" else
-        "Reset your profile background."))
+                       "Reset your profile background."))
 
     @commands.command(pass_context=True, aliases=["lb", "ranks", "levels"])
     async def leaderboard(self, ctx):

@@ -57,11 +57,11 @@ class Rank:
         im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
 
         # Avatar border
-        im_draw.ellipse((0, 0, w + 40, h + 40), fill=color)
+        im_draw.ellipse((14, 0, w + 40 + 14, h + 40), fill=color)
 
         # Avatar
         circle = Image.open("images/circle.png")
-        im.paste(profile_bytes, (20, 20), circle)
+        im.paste(profile_bytes, (48, 20), circle)
 
         buffer = BytesIO()
         im.save(buffer, "png")

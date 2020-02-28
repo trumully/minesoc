@@ -10,13 +10,12 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from os import listdir
 from math import log, floor
 
-# leveling system
-# 1. create table if it doesn't exist
-# 2. assign each user xp, lvl, cd if they don't have it already
-# 3. fetch all users from server
-# 4. if a user's message count has increased and their cd time has elapsed, give them xp
-# 5. if this amount of xp results in a level up, send a level up message in channel of original message
-# 6. reset user's cd time
+
+def human_format(number):
+    units = ['', 'K', 'M', 'G', 'T', 'P']
+    k = 1000.0
+    magnitude = int(floor(log(number, k)))
+    return '%.2f%s' % (number / k ** magnitude, units[magnitude])
 
 
 class Rank:
@@ -24,12 +23,6 @@ class Rank:
         self.font = ImageFont.truetype("arialbd.ttf", 28*2)
         self.medium_font = ImageFont.truetype("arialbd.ttf", 22*2)
         self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
-
-    def human_format(self, number):
-        units = ['', 'K', 'M', 'G', 'T', 'P']
-        k = 1000.0
-        magnitude = int(floor(log(number, k)))
-        return '%.2f%s' % (number / k ** magnitude, units[magnitude])
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
@@ -44,8 +37,7 @@ class Rank:
         im_draw = ImageDraw.Draw(im)
 
         # User name
-        name = user.name
-        im_draw.text((350, 10), name, font=self.font, fill=color)
+        im_draw.text((350, 10), user, font=self.font, fill=color)
 
         # Level
         lvl_text = f"LEVEL {lvl}"
@@ -55,7 +47,7 @@ class Rank:
         progress = xp / xp_to_next
 
         # XP progress
-        xp_text = f"{xp if xp < 1000 else self.human_format(xp)} / {xp_to_next if xp_to_next < 1000 else self.human_format(xp_to_next)}"
+        xp_text = f"{xp if xp < 1000 else human_format(xp)} / {xp_to_next if xp_to_next < 1000 else human_format(xp_to_next)}"
         im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
         # XP progress bar
@@ -116,7 +108,7 @@ class Levels(commands.Cog):
                     async with session.get(f"{member.avatar_url}") as r:
                         profile_bytes = await r.read()
 
-                buffer = rankcard.draw(member, user["lvl"], user["xp"], BytesIO(profile_bytes),
+                buffer = rankcard.draw(member.display_name, user["lvl"], user["xp"], BytesIO(profile_bytes),
                                        discord.Color(user["color"]).to_rgb(), user["bg"])
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))

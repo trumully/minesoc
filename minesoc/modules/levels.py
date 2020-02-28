@@ -49,7 +49,7 @@ class Rank:
 
         im_draw.rectangle((0, 0, 296, 296), fill=color)
 
-        im.paste(profile_bytes, (20, 20), profile_bytes)
+        im.paste(profile_bytes, (20, 20))
 
         buffer = BytesIO()
         im.save(buffer, "png")

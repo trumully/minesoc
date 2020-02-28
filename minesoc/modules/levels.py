@@ -25,9 +25,6 @@ class Rank:
         self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
-        xp_to_next = round((4 * (lvl ** 3) / 5))
-        progress = xp / xp_to_next
-
         profile_bytes = Image.open(profile_bytes)
         size = (256, 256)
         profile_bytes = profile_bytes.resize(size)
@@ -49,11 +46,12 @@ class Rank:
         im_draw.text((350, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
 
         # XP progress
-        xp_text = f"{xp} / {xp_to_next}"
+        xp_text = f"{xp} / {round((4 * (lvl ** 3) / 5))}"
         im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
         # XP progress bar
         im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
+        progress = xp / round((4 * (lvl ** 3) / 5))
         im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
 
         # Avatar border

@@ -35,25 +35,21 @@ class Rank:
             im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
 
         im_draw = ImageDraw.Draw(im)
-        im_draw.text((154*2, 5*2), user, font=self.font, fill=color)
+        im_draw.text((308, 10), user, font=self.font, fill=color)
 
         lvl_text = f"LEVEL {lvl}"
-        im_draw.text((154*2, 37*2), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
+        im_draw.text((308, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
 
         xp_text = f"{xp}/{round((4 * (lvl ** 3) / 5))}"
-        im_draw.text((154*2, 62*2), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
+        im_draw.text((308, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
-        im_draw.rectangle((175*2, 95*2, 750, 125*2), fill=(64, 64, 64, 255))
+        im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
         progress = xp / round((4 * (lvl ** 3) / 5))
-        im_draw.rectangle((175*2, 95*2, 350 + int(400 * progress), 125*2), fill=color)
+        im_draw.rectangle((350, 190, 350 + int(400 * progress), 125*2), fill=color)
 
-        im_draw.rectangle((0, 0, 148*2, 148*2), fill=color)
+        im_draw.rectangle((0, 0, 296, 296), fill=color)
 
-        # Rounded square mask.
-        # rounded_square = Image.open("/opt/discord-v2/github/minesoc/square-rounded-256.png")
-        # im.paste(profile_bytes, (10*2, 10*2), rounded_square)
-
-        im.paste(profile_bytes, (10 * 2, 10 * 2))
+        im.paste(profile_bytes, (20, 20), profile_bytes)
 
         buffer = BytesIO()
         im.save(buffer, "png")

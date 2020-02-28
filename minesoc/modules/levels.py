@@ -29,8 +29,8 @@ class Rank:
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
-        size = (256, 256)
-        profile_bytes = profile_bytes.resize(size)
+        w, h = (256, 256)
+        profile_bytes = profile_bytes.resize((w, h))
 
         if bg is not None and bg != "default":
             bg_img = Image.open(f"backgrounds/{bg}.jpg")
@@ -57,11 +57,11 @@ class Rank:
         im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
 
         # Avatar border
-        im_draw.ellipse((0, 0, 296, 296), fill=color)
+        im_draw.ellipse((27, 0, w + 40, h + 40), fill=color)
 
         # Avatar
         circle = Image.open("images/circle.png")
-        im.paste(profile_bytes, (20, 20), circle)
+        im.paste(profile_bytes, (27, 20), circle)
 
         buffer = BytesIO()
         im.save(buffer, "png")

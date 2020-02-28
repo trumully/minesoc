@@ -62,6 +62,9 @@ class Rank:
         im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
         im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
 
+        # Avatar border
+        im_draw.ellipse((0, 0, 296, 296), fill=color)
+
         # Avatar
         circle = Image.open("images/circle.png")
         im.paste(profile_with_border, (20, 20), circle)

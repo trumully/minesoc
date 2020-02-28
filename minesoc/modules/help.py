@@ -36,13 +36,6 @@ class CustomHelpCommand(commands.HelpCommand):
                         value=f"```\n{', '.join([command.name for command in group.commands])}\n```", inline=False)
         await self.context.send(embed=embed)
 
-    async def send_cog_help(self, cog):
-        embed = discord.Embed(title=f"{self.context.bot.user.name} Help",
-                              description=f"{cog.name} commands.\n"
-                                          f"Use `{self.clean_prefix}help [command]` for more info on a command.",
-                              color=self.context.bot.colors.help)
-        embed.add_field(name="Commands:", value=f"```{', '.join(c.name for c in await self.filter_commands(cog.get_commands(), sort=True))}```")
-
     def get_command_signature(self, command):
         return "{0.clean_prefix}{1.qualified_name} {1.signature}".format(self, command)
 

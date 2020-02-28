@@ -8,6 +8,7 @@ from discord.ext import commands
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from os import listdir
+from math import log, floor
 
 # leveling system
 # 1. create table if it doesn't exist
@@ -24,9 +25,15 @@ class Rank:
         self.medium_font = ImageFont.truetype("arialbd.ttf", 22*2)
         self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
 
+    def human_format(self, number):
+        units = ['', 'K', 'M', 'G', 'T', 'P']
+        k = 1000.0
+        magnitude = int(floor(log(number, k)))
+        return '%.2f%s' % (number / k ** magnitude, units[magnitude])
+
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
-        size = (256, 256)
+        size = (240, 240)
         profile_bytes = profile_bytes.resize(size)
         if bg is not None and bg != "default":
             bg_img = Image.open(f"backgrounds/{bg}.jpg")
@@ -35,20 +42,30 @@ class Rank:
             im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
 
         im_draw = ImageDraw.Draw(im)
-        im_draw.text((308, 10), user, font=self.font, fill=color)
 
+        # User name
+        name = user.name
+        im_draw.text((350, 10), name, font=self.font, fill=color)
+
+        # Level
         lvl_text = f"LEVEL {lvl}"
-        im_draw.text((308, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
+        im_draw.text((350, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
 
-        xp_text = f"{xp}/{round((4 * (lvl ** 3) / 5))}"
-        im_draw.text((308, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
+        xp_to_next = round((4 * (lvl ** 3) / 5))
+        progress = xp / xp_to_next
 
+        # XP progress
+        xp_text = f"{xp if xp < 1000 else self.human_format(xp)} / {xp_to_next if xp_to_next < 1000 else self.human_format(xp_to_next)}"
+        im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
+
+        # XP progress bar
         im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
-        progress = xp / round((4 * (lvl ** 3) / 5))
         im_draw.rectangle((350, 190, 350 + int(400 * progress), 125*2), fill=color)
 
-        im_draw.ellipse((0, 0, 296, 296), fill=color)
+        # Avatar border
+        im_draw.ellipse((0, 0, 280, 280), fill=color)
 
+        # Avatar
         circle = Image.open("images/circle.png")
         im.paste(profile_bytes, (20, 20), circle)
 
@@ -99,7 +116,7 @@ class Levels(commands.Cog):
                     async with session.get(f"{member.avatar_url}") as r:
                         profile_bytes = await r.read()
 
-                buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
+                buffer = rankcard.draw(member, user["lvl"], user["xp"], BytesIO(profile_bytes),
                                        discord.Color(user["color"]).to_rgb(), user["bg"])
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
@@ -155,7 +172,7 @@ class Levels(commands.Cog):
                     rank = idx + 1
                     if rank <= 3:
                         if rank == 1:
-                            top_user = f"Top Member: 🏆 **{user.name}**"
+                            top_user = f"Top Member: 🏆 **{str(user)}**"
                         rank = f"{self.leaderboard_emojis[rank]}\n"
                     else:
                         rank = f"#{rank}\n"

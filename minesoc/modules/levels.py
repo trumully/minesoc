@@ -28,12 +28,6 @@ class Rank:
         xp_to_next = round((4 * (lvl ** 3) / 5))
         progress = xp / xp_to_next
 
-        if xp_to_next > 999:
-            xp_to_next = human_format(xp_to_next)
-
-        if xp > 999:
-            xp = human_format(xp)
-
         profile_bytes = Image.open(profile_bytes)
         size = (256, 256)
         profile_bytes = profile_bytes.resize(size)

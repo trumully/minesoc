@@ -15,7 +15,10 @@ def human_format(number):
     units = ['', 'K', 'M', 'G', 'T', 'P']
     k = 1000.0
     magnitude = int(floor(log(number, k)))
-    return '%.2f%s' % (number / k ** magnitude, units[magnitude])
+    if magnitude == 0:
+        return number
+    else:
+        return '%.2f%s' % (number / k**magnitude, units[magnitude])
 
 
 class Rank:
@@ -28,7 +31,6 @@ class Rank:
         profile_bytes = Image.open(profile_bytes)
         size = (256, 256)
         profile_bytes = profile_bytes.resize(size)
-        profile_with_border = ImageOps.expand(profile_bytes, border=20, fill=color)
 
         if bg is not None and bg != "default":
             bg_img = Image.open(f"backgrounds/{bg}.jpg")
@@ -46,7 +48,7 @@ class Rank:
         im_draw.text((350, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
 
         # XP progress
-        xp_text = f"{xp} / {round((4 * (lvl ** 3) / 5))}"
+        xp_text = f"{human_format(xp)} / {human_format(round((4 * (lvl ** 3) / 5)))} XP"
         im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
         # XP progress bar
@@ -59,7 +61,7 @@ class Rank:
 
         # Avatar
         circle = Image.open("images/circle.png")
-        im.paste(profile_with_border, (20, 20), circle)
+        im.paste(profile_bytes, (20, 20), circle)
 
         buffer = BytesIO()
         im.save(buffer, "png")

@@ -25,9 +25,19 @@ class Rank:
         self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
+        xp_to_next = round((4 * (lvl ** 3) / 5))
+        progress = xp / xp_to_next
+
+        if xp_to_next > 999:
+            xp_to_next = human_format(xp_to_next)
+
+        if xp > 999:
+            xp = human_format(xp)
+
         profile_bytes = Image.open(profile_bytes)
         size = (256, 256)
         profile_bytes = profile_bytes.resize(size)
+        profile_with_border = ImageOps.expand(profile_bytes, border=20, fill=color)
 
         if bg is not None and bg != "default":
             bg_img = Image.open(f"backgrounds/{bg}.jpg")
@@ -44,9 +54,6 @@ class Rank:
         lvl_text = f"LEVEL {lvl}"
         im_draw.text((350, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
 
-        xp_to_next = round((4 * (lvl ** 3) / 5))
-        progress = xp / xp_to_next
-
         # XP progress
         xp_text = f"{xp} / {xp_to_next}"
         im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
@@ -55,12 +62,9 @@ class Rank:
         im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
         im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
 
-        # Avatar border
-        im_draw.ellipse((0, 0, 296, 296), fill=color)
-
         # Avatar
         circle = Image.open("images/circle.png")
-        im.paste(profile_bytes, (20, 20), circle)
+        im.paste(profile_with_border, (20, 20), circle)
 
         buffer = BytesIO()
         im.save(buffer, "png")
@@ -103,7 +107,6 @@ class Levels(commands.Cog):
 
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                               member_id, guild_id)
-
             if user:
                 async with ctx.typing(), aiohttp.ClientSession() as session:
                     async with session.get(f"{member.avatar_url}") as r:

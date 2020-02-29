@@ -24,7 +24,7 @@ class Economy(commands.Cog):
     async def economy_table(self):
         await self.bot.wait_until_ready()
 
-        await self.bot.db.execute("CREATE TABLE IF NOT EXISTS economy(user BIGINT, amount BIGINT, cd REAL, streak BIGINT, streak_time REAL)")
+        await self.bot.db.execute("CREATE TABLE IF NOT EXISTS economy(user BIGINT, amount BIGINT, cd REAL)")
 
     async def user_check(self, user_id):
         return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM economy WHERE user=$1)", user_id)
@@ -47,8 +47,8 @@ class Economy(commands.Cog):
                 await self.bot.db.execute("UPDATE economy SET amount=$1, cd=$2 WHERE user=$3",
                                           result["amount"] + gain, time.time(), author)
         else:
-            await self.bot.db.execute("INSERT INTO economy (user, amount, cd, streak, streak_time) "
-                                      "VALUES ($1, $2, $3, 0, 0)", author, gain, time.time())
+            await self.bot.db.execute("INSERT INTO economy (user, amount, cd) "
+                                      "VALUES ($1, $2, $3)", author, gain, time.time())
 
     @commands.command()
     async def balance(self, ctx):
@@ -60,7 +60,7 @@ class Economy(commands.Cog):
         else:
             await ctx.send("You haven't earned any credits yet!")
 
-    @commands.command()
+    """@commands.command()
     # @commands.cooldown(1, 3600*24, type=commands.BucketType.user)  # 24 hour cooldown
     async def daily(self, ctx):
         author = ctx.author.id
@@ -96,7 +96,7 @@ class Economy(commands.Cog):
 
             msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: 1**"
 
-        await ctx.send(msg)
+        await ctx.send(msg)"""
 
 
 def setup(bot):

@@ -58,9 +58,10 @@ class Economy(commands.Cog):
             result = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
             await ctx.send(f"💎 | You have **${result['amount']}** credits.")
         else:
-            await ctx.send("You haven't earned any credits yet!")
+            await ctx.send("**You haven't earned any credits yet!**")
 
     @commands.command()
+    @commands.cooldown(1, 3600*24, type=commands.BucketType.user)  # 24 hour cooldown
     async def daily(self, ctx):
         author = ctx.author.id
 
@@ -70,14 +71,14 @@ class Economy(commands.Cog):
             result = await self.bot.db.fetchrow("SELECT amount, streak, streak_time FROM economy WHERE user_id=$1",
                                                 author)
 
-            streak = 0
+            streak = result["streak"] + 1
             streak_bonus = 0
 
-            if time.time() - result["streak_time"] <= STREAK_TIMER:
-                streak = result["streak"] + 1
+            if time.time() - result["streak_time"] >= STREAK_TIMER:
+                streak = 0
 
-                if streak % 5 == 0:
-                    streak_bonus = self.gen_currency(self.credit_gain) * 2
+            if streak % 5 == 0:
+                streak_bonus = self.gen_currency(self.credit_gain) * 2
 
             net_gain = result["amount"] + self.daily_gain + streak_bonus
 

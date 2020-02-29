@@ -77,13 +77,13 @@ class Economy(commands.Cog):
             if time.time() - result["streak_time"] >= STREAK_TIMER:
                 streak = 0
 
-            if streak % 5 == 0:
+            if streak % 5 == 0 and streak > 0:
                 streak_bonus = self.gen_currency(self.credit_gain) * 2
 
-            net_gain = result["amount"] + self.daily_gain + streak_bonus
+            net_gain = self.daily_gain + streak_bonus
 
             await self.bot.db.execute("UPDATE economy SET amount=$1, streak=$2, streak_time=$3 WHERE user_id=$4",
-                                      net_gain, streak, time.time(), author)
+                                      result["amount"] + net_gain, streak, time.time(), author)
 
             msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: {streak}**"
 

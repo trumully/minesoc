@@ -97,7 +97,7 @@ class Owner(commands.Cog):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 
-        if target not in self.bot.user_blacklist and target not in self.bot.guild_blacklist:
+        if target.id not in self.bot.user_blacklist and target.id not in self.bot.guild_blacklist:
             await self.add_blacklist(target.id, table, reason)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
         else:
@@ -108,7 +108,7 @@ class Owner(commands.Cog):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 
-        if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
+        if target.id in self.bot.user_blacklist or target.id in self.bot.guild_blacklist:
             await self.remove_blacklist(target.id, table)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
         else:
@@ -129,7 +129,7 @@ class Owner(commands.Cog):
         """Show a entry from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 
-        if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
+        if target.id in self.bot.user_blacklist or target.id in self.bot.guild_blacklist:
             entry = await self.get_blacklist_entry(target.id, table)
             embed = discord.Embed(color=self.bot.colors.neutral)
             if isinstance(target, discord.User):

@@ -1,13 +1,12 @@
 # music.py
 # Uses an alternative library for playing music
 
+import math
+import re
+
 import discord
 import lavalink
-import re
 import spotipy
-import math
-import asyncio
-
 from discord.ext import commands
 
 url_rx = re.compile("https?://(?:www\\.)?.+")  # noqa: W605
@@ -58,7 +57,7 @@ class Music(commands.Cog):
 
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.CommandInvokeError):
-            await self.bot.logger.error(error.original)
+            await ctx.send(error)
             # The above handles errors thrown in this cog and shows them to the user.
             # This shouldn't be a problem as the only errors thrown in this cog are from `ensure_voice`
             # which contain a reason string, such as "Join a voice channel" etc. You can modify the above
@@ -106,7 +105,8 @@ class Music(commands.Cog):
                 sp = spotipy.Spotify(auth=token)
 
                 if re.match(spotify_url_rx, query):
-                    spotify_id = re.search(f"{spotify_type}/(.*)\\?si=", query).group(1) if "?si=" in query else re.search(f"{spotify_type}/(.*)", query).group(1)
+                    spotify_id = re.search(f"{spotify_type}/(.*)\\?si=", query).group(
+                        1) if "?si=" in query else re.search(f"{spotify_type}/(.*)", query).group(1)
                 else:
                     spotify_id = query.split(":")[-1]
 

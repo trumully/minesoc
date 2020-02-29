@@ -1,14 +1,16 @@
-import logging
 import json
-import requests
+import logging
 import os
 from socket import gethostname
+
+import requests
 
 
 class DiscordHandler(logging.Handler):
     """
     A custom handler class which sends logging records, to a webhook.
     """
+
     def __init__(self, webhook_url):
         logging.Handler.__init__(self)
 

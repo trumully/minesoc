@@ -1,8 +1,7 @@
-import discord
-import json
-import time
 import asyncio
+import time
 
+import discord
 from discord.ext import commands
 
 LEVEL_COOLDOWN = 120

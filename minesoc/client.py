@@ -1,18 +1,16 @@
-import discord
 import asyncio
 import logging
-import asyncpg
-import json
 import time
-import traceback
-
-from discord.ext import commands
-from discord.ext.commands import Bot
 from datetime import datetime
 from pathlib import Path
-from libneko.aggregates import Proxy
-from minesoc.utils import logger, emojis, context, config, api, extras
 from random import randint
+
+import asyncpg
+import discord
+from discord.ext.commands import Bot
+from libneko.aggregates import Proxy
+
+from minesoc.utils import logger, emojis, context, config, api, extras
 
 
 class Minesoc(Bot):
@@ -34,9 +32,6 @@ class Minesoc(Bot):
         self.sqlschema = extras.SQLSchema()
         self._emojis = emojis.CustomEmojis()
         self.colors = config.ColorProxy()
-
-        # self.da_id = self.config.deviantart_id
-        # self.da_secret = self.config.deviantart_secret
 
         self.xp_values = Proxy(min=3, max=5)
 

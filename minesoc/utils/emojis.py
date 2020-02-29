@@ -1,5 +1,5 @@
-from libneko.aggregates import Proxy
 from discord import Guild, Emoji
+from libneko.aggregates import Proxy
 
 
 class CustomEmojis(Proxy):

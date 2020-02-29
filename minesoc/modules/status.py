@@ -1,24 +1,17 @@
 # status.py
 # This extension contains commands relating to Minecraft queries
-import discord
 import asyncio
-import aiohttp.client
-
-from discord.ext import commands
-from libneko.aggregates import Proxy
-from dotenv import dotenv_values
-from pathlib import Path
 from datetime import datetime
 
-DIR = Path(__file__).parent
-ENV_DIR = DIR / ".env"
+import aiohttp.client
+import discord
+from discord.ext import commands
 
 
 class Minecraft(commands.Cog, name="Minecraft"):
     """Minecraft related commands"""
 
     def __init__(self, bot):
-        self.config = Proxy(dotenv_values(dotenv_path=ENV_DIR))
         self.bot = bot
 
     # Commands

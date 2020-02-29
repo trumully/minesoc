@@ -1,9 +1,10 @@
 # config.py
 # This extension handles certain bot configurations.
-import discord
 import asyncio
 
+import discord
 from discord.ext import commands
+
 from minesoc.utils import checks
 
 
@@ -146,11 +147,13 @@ class Config(commands.Cog):
         options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
         responses = ["1", "2", "exit"]
         embed = discord.Embed(title=f"{ctx.guild.name} Persistence Settings",
-                              description=f"```py\nUsers gain {self.bot.xp_values.min}-{self.bot.xp_values.max} XP per message\n"
-                                          f"XP gain on this server is {'Enabled' if do_lvl else 'Disabled'}\n"
-                                          f"Level-Up messages on this server are {'Enabled' if do_msg else 'Disabled'}\n\n"
-                                          f"{''.join(options)}\n"
-                                          f"Type the appropriate number to access the menu.\nType 'exit' to leave the menu```")
+                              description=f"```py\n"
+                                          f"Users gain {self.bot.xp_values.min}-{self.bot.xp_values.max} XP per message"
+                                          f"\nXP gain on this server is {'Enabled' if do_lvl else 'Disabled'}\n"
+                                          f"Level-Up messages on this server are {'Enabled' if do_msg else 'Disabled'}"
+                                          f"\n\n{''.join(options)}\n"
+                                          f"Type the appropriate number to access the menu.\n"
+                                          f"Type 'exit' to leave the menu```")
 
         menu = await ctx.send(embed=embed)
 
@@ -176,8 +179,10 @@ class Config(commands.Cog):
             if message.content == responses[0]:
                 options = ["Enable level system", "Disable level system"]
                 options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-                embed = discord.Embed(title=f"Edit Persistence Settings",
-                                      description=f"```py\n{''.join(options)}```\nType the appropriate number to access the menu.\nType 'exit' to leave the menu")
+                desc = f"```py\n" \
+                       f"{''.join(options)}```\nType the appropriate number to access the menu.\n" \
+                       f"Type 'exit' to leave the menu"
+                embed = discord.Embed(title=f"Edit Persistence Settings", description=desc)
                 menu = await ctx.send(embed=embed)
                 try:
                     message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
@@ -198,7 +203,8 @@ class Config(commands.Cog):
                 options = ["Enable level-up messages", "Disable level-up messages"]
                 options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
                 embed = discord.Embed(title=f"Edit Level-Up message Settings",
-                                      description=f"```py\n{''.join(options)}```\nType the appropriate number to access the menu.\nType 'exit' to leave the menu")
+                                      description=f"```py\n{''.join(options)}```\nType the appropriate number to "
+                                                  f"access the menu.\nType 'exit' to leave the menu")
                 menu = await ctx.send(embed=embed)
                 try:
                     message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
@@ -216,8 +222,8 @@ class Config(commands.Cog):
 
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, PrefixTooLong):
-            await ctx.error(
-                description=f"The provided prefix is too long! It can't be longer than `{self.prefix_limit}` characters.")
+            desc = f"The provided prefix is too long! It can't be longer than `{self.prefix_limit}` characters."
+            await ctx.error(description=desc)
 
     def cog_unload(self):
         self.bot.command_prefix = self.bot.config.default_prefix

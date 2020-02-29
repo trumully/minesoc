@@ -1,6 +1,6 @@
-import discord
 import typing
 
+import discord
 from discord.ext import commands
 
 
@@ -91,7 +91,8 @@ class Owner(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @blacklist.command(name="add")
-    async def blacklist_add(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild], *, reason: str = "No reason given."):
+    async def blacklist_add(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild], *,
+                            reason: str = "No reason given."):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
 

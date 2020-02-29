@@ -3,6 +3,7 @@
 
 import discord
 from discord.ext import commands
+
 from minesoc.utils import checks
 
 
@@ -10,9 +11,9 @@ class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def format_permission(self, permisions: discord.Permissions, seperator="\n"):
+    def format_permission(self, permissions: discord.Permissions, seperator="\n"):
         output = list()
-        for perm in permisions:
+        for perm in permissions:
             if perm[1]:
                 output.append("+ " + perm[0].replace("_", " ").title())
         else:
@@ -30,7 +31,8 @@ class Moderation(commands.Cog):
             embed.add_field(name="Permissions", value="```diff\n" + self.format_permission(role.permissions) + "```",
                             inline=False)
         embed.add_field(name="Other",
-                        value=f"Position: `{role.position}`\nHoist: {ctx.switch(role.hoist)}\nMentionable: {ctx.switch(role.mentionable)}",
+                        value=f"Position: `{role.position}`\nHoist: {ctx.switch(role.hoist)}\n"
+                              f"Mentionable: {ctx.switch(role.mentionable)}",
                         inline=False)
 
         await ctx.send(embed=embed)
@@ -41,7 +43,9 @@ class Moderation(commands.Cog):
     async def role_add(self, ctx: commands.Context, member: discord.Member, roles: commands.Greedy[discord.Role]):
         await member.add_roles(*roles, reason=f"Operation executed by {ctx.author} ({ctx.author.id})")
         await ctx.success(
-            description=f"Added {'roles' if len(roles) > 1 else 'role'} {' | '.join([r.mention for r in roles])} to {member.mention}.")
+            description=f"Added {'roles' if len(roles) > 1 else 'role'} "
+                        f"{' | '.join([r.mention for r in roles])} to {member.mention}."
+        )
 
     @role.command(name="remove")
     @commands.has_permissions(manage_roles=True)
@@ -49,7 +53,9 @@ class Moderation(commands.Cog):
     async def role_remove(self, ctx: commands.Context, member: discord.Member, roles: commands.Greedy[discord.Role]):
         await member.remove_roles(*roles, reason=f"Operation executed by {ctx.author} ({ctx.author.id})")
         await ctx.success(
-            description=f"Removed {'roles' if len(roles) > 1 else 'role'} {' | '.join([r.mention for r in roles])} from {member.mention}.")
+            description=f"Removed {'roles' if len(roles) > 1 else 'role'} "
+                        f"{' | '.join([r.mention for r in roles])} from {member.mention}."
+        )
 
     @role.command(name="delete")
     @commands.has_permissions(manage_roles=True)
@@ -67,7 +73,9 @@ class Moderation(commands.Cog):
                                            color=color if color else discord.Color.default(),
                                            reason=f"Operation executed by {ctx.author} ({ctx.author.id})")
         await ctx.success(
-            description=f"Created role {role.mention} with following permissions:\n```diff\n{self.format_permission(permissions)}```")
+            description=f"Created role {role.mention} with following permissions:\n"
+                        f"```diff\n{self.format_permission(permissions)}```"
+        )
 
     @commands.command()
     @checks.is_owner_or_has_permissions(kick_members=True)
@@ -75,7 +83,7 @@ class Moderation(commands.Cog):
     async def kick(self, ctx, member: discord.Member, *, reason: str = "No reason given."):
         await member.kick(reason=reason)
         await ctx.success(description=f"Kicked {member.mention} from the server.")
-    
+
     @commands.command()
     @checks.is_owner_or_has_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)

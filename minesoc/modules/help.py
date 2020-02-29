@@ -7,11 +7,14 @@ from discord.ext import commands
 
 class CustomHelpCommand(commands.HelpCommand):
     async def send_bot_help(self, mapping):
-        cmds = {i: [f"`{c.name}`" for c in await self.filter_commands(self.context.bot.get_cog(i).get_commands(), sort=True)] for i in self.context.bot.cogs
+        cmds = {i: [f"`{c.name}`" for c in
+                    await self.filter_commands(self.context.bot.get_cog(i).get_commands(), sort=True)] for i in
+                self.context.bot.cogs
                 if self.context.bot.get_cog(i).get_commands()}
         cmd_str = "\n".join([f"__**{i}:**__ {' '.join(cmds[i])}" for i in cmds if cmds[i]])
         embed = discord.Embed(title=f"{self.context.bot.user.name} Help",
-                              description=f"Use `{self.clean_prefix}help [command]` for more info on a command.\n\n{cmd_str}",
+                              description=f"Use `{self.clean_prefix}help [command]` for more info on a command."
+                                          f"\n\n{cmd_str}",
                               color=self.context.bot.colors.help)
         await self.context.send(embed=embed)
 

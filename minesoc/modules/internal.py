@@ -1,8 +1,10 @@
-import discord
-from discord.ext import commands, tasks
 from datetime import timedelta, datetime
-from minesoc.utils import errors
+
+import discord
+from discord.ext import commands
 from libneko import pag
+
+from minesoc.utils import errors
 
 
 class Internal(commands.Cog):
@@ -45,7 +47,8 @@ class Internal(commands.Cog):
             self.bot.logger.warning("Emojis channel can't be found.")
 
     async def purge_logs(self):
-        purged = await self._webhook_log_channel.purge(before=datetime.utcfromtimestamp(self.bot.start_time) - timedelta(days=0))
+        purged = await self._webhook_log_channel.purge(
+            before=datetime.utcfromtimestamp(self.bot.start_time) - timedelta(days=0))
         if purged:
             await self._webhook_log_channel.edit(
                 topic=f"{self.bot.custom_emojis.notification} Last purge: {self.bot.format_datetime(datetime.now())}")
@@ -87,7 +90,8 @@ class Internal(commands.Cog):
         purged = await self.purge_logs()
         if purged:
             await ctx.success(
-                description=f"Purging messages older than (`{self.bot.start_time.strftime('%X %x')}`) (`{len(purged)} messages`).")
+                description=f"Purging messages older than (`{self.bot.start_time.strftime('%X %x')}`) "
+                            f"(`{len(purged)} messages`).")
         else:
             await ctx.info(description="No messages have been purged.")
 

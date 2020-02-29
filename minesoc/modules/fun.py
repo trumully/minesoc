@@ -1,9 +1,9 @@
-import discord
 import asyncio
 import string
-
-from discord.ext import commands
 from random import choice, choices, randint
+
+import discord
+from discord.ext import commands
 
 _8ball = ["It is certain.", "It is decidedly so.", "Without a doubt.", "Yes - definitely.", "You may rely on it.",
           "As I see it, yes.", "Most likely.", "Outlook good.", "Yes.", "Signs point to yes", "Reply hazy, try again.",
@@ -98,7 +98,8 @@ class Fun(commands.Cog):
     async def cat(self, ctx):
         """Returns a random image of a cat."""
         message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.custom_emojis.typing} **Searching ...**"
+            embed=discord.Embed(color=discord.Color.greyple(),
+                                title=f"{self.bot.custom_emojis.typing} **Searching ...**"
                                 ))
         async with ctx.typing():
             await asyncio.sleep(2.5)
@@ -109,7 +110,8 @@ class Fun(commands.Cog):
     async def dog(self, ctx, breed: str = None, sub_breed: str = None):
         """Returns a random image of a dog."""
         message = await ctx.send(
-            embed=discord.Embed(color=discord.Color.greyple(), title=f"{self.bot.custom_emojis.typing} **Searching ...**"
+            embed=discord.Embed(color=discord.Color.greyple(),
+                                title=f"{self.bot.custom_emojis.typing} **Searching ...**"
                                 ))
         async with ctx.typing():
             await asyncio.sleep(2.5)

@@ -1,14 +1,14 @@
 # levels.py
 # This extension handles level ups
 
-import discord
-import aiohttp.client
-
-from discord.ext import commands
 from io import BytesIO
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from os import listdir
 from math import log, floor
+from os import listdir
+
+import aiohttp.client
+import discord
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from discord.ext import commands
 
 
 def human_format(number):
@@ -18,14 +18,14 @@ def human_format(number):
     if magnitude == 0:
         return number
     else:
-        return '%.2f%s' % (number / k**magnitude, units[magnitude])
+        return '%.2f%s' % (number / k ** magnitude, units[magnitude])
 
 
 class Rank:
     def __init__(self):
-        self.font = ImageFont.truetype("arialbd.ttf", 28*2)
-        self.medium_font = ImageFont.truetype("arialbd.ttf", 22*2)
-        self.small_font = ImageFont.truetype("arialbd.ttf", 16*2)
+        self.font = ImageFont.truetype("arialbd.ttf", 28 * 2)
+        self.medium_font = ImageFont.truetype("arialbd.ttf", 22 * 2)
+        self.small_font = ImageFont.truetype("arialbd.ttf", 16 * 2)
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
@@ -144,8 +144,9 @@ class Levels(commands.Cog):
         await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
                                   image, member, guild)
 
-        await ctx.send(embed=discord.Embed(title=f"Changed your image to `{image}`" if image != "default" else
-                       "Reset your profile background."))
+        embed = discord.Embed()
+        embed.title = f"Changed your image to `{image}`" if image != "default" else "Reset your profile background."
+        await ctx.send(embed=embed)
 
     @commands.command(pass_context=True, aliases=["lb", "ranks", "levels"])
     async def leaderboard(self, ctx):

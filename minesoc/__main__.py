@@ -1,5 +1,6 @@
-from minesoc import client
 import asyncio
+
+from minesoc import client
 
 
 async def async_main():
@@ -8,5 +9,6 @@ async def async_main():
         await bot.start()
     finally:
         await bot.close()
+
 
 asyncio.run(async_main())

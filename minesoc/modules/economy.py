@@ -71,24 +71,22 @@ class Economy(commands.Cog):
             result = await self.bot.db.fetchrow("SELECT amount, streak, streak_time FROM economy WHERE user_id=$1",
                                                 author)
 
-            streak = result["streak"] + 1
-            streak_bonus = 0
-
-            if time.time() - result["streak_time"] >= STREAK_TIMER:
-                streak = 0
-
-            if streak % 5 == 0 and streak > 0:
-                streak_bonus = self.gen_currency(self.credit_gain) * 2
-
-            net_gain = self.daily_gain + streak_bonus
-
-            await self.bot.db.execute("UPDATE economy SET amount=$1, streak=$2, streak_time=$3 WHERE user_id=$4",
-                                      result["amount"] + net_gain, streak, time.time(), author)
+            if time.time() - result["streak_time"] >= STREAK_TIMER and result["streak_time"] > 0:
+                streak = 1
+            else:
+                streak = result["streak"] + 1
 
             msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: {streak}**"
 
-            if streak_bonus > 0:
+            if streak % 5 == 0 and streak > 0:
+                streak_bonus = self.gen_currency(self.credit_gain) * 2
+                net_gain = self.daily_gain + streak_bonus
                 msg += f"\n\n**You completed a streak and earned an extra ${streak_bonus} credits ({net_gain} total)!**"
+            else:
+                net_gain = self.daily_gain
+
+            await self.bot.db.execute("UPDATE economy SET amount=$1, streak=$2, streak_time=$3 WHERE user_id=$4",
+                                      result["amount"] + net_gain, streak, time.time(), author)
 
         else:
             await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time) "

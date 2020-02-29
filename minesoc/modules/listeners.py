@@ -39,7 +39,7 @@ class Listeners(commands.Cog):
         config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
         if not config:
-            await self.bot.db.execute("INSERT INTO persistence(guild, lvl_msg, lvls) VALUES($1, TRUE, TRUE)", guild)
+            await self.bot.db.execute("INSERT INTO persistence (guild, lvl_msg, lvls) VALUES ($1, TRUE, TRUE)", guild)
             config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
         do_lvl = config["lvls"]
@@ -48,15 +48,12 @@ class Listeners(commands.Cog):
         if do_lvl:
             author = int(message.author.id)
 
-            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
-                                              author, guild)
+            await self.bot.db.execute("INSERT INTO levels (user_id, guild_id, xp, lvl, cd, color, bg) "
+                                      "VALUES ($1, $2, 0, 1, $3, $4, 'default') "
+                                      "ON CONFLICT (user_id, guild_id) DO NOTHING", author, guild,
+                                      time.time(), 0xFFFFFF)
 
-            if not user:
-                await self.bot.db.execute("INSERT INTO levels(user_id, guild_id, xp, lvl, cd, color, bg) "
-                                          "VALUES($1, $2, 0, 1, $3, $4, 'default')", author, guild,
-                                          time.time(), 0xFFFFFF)
-                user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2", author,
-                                                  guild)
+            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1", author)
 
             xp = self.bot.xp_gain()
 

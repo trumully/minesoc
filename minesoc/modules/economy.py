@@ -24,10 +24,10 @@ class Economy(commands.Cog):
     async def economy_table(self):
         await self.bot.wait_until_ready()
 
-        await self.bot.db.execute("CREATE TABLE IF NOT EXISTS economy(user BIGINT, amount BIGINT, cd REAL)")
+        await self.bot.db.execute("CREATE TABLE IF NOT EXISTS economy(user_id BIGINT, amount BIGINT, cd REAL, streak BIGINT, streak_time REAL)")
 
     async def user_check(self, user_id):
-        return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM economy WHERE user=$1)", user_id)
+        return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM economy WHERE user_id=$1)", user_id)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -42,33 +42,32 @@ class Economy(commands.Cog):
         gain = self.gen_currency(self.credit_gain)
 
         if check[0]:
-            result = await self.bot.db.fetchrow("SELECT amount, cd FROM economy WHERE user=$1", author)
+            result = await self.bot.db.fetchrow("SELECT amount, cd FROM economy WHERE user_id=$1", author)
             if time.time() - result["cd"] >= COOLDOWN:
-                await self.bot.db.execute("UPDATE economy SET amount=$1, cd=$2 WHERE user=$3",
+                await self.bot.db.execute("UPDATE economy SET amount=$1, cd=$2 WHERE user_id=$3",
                                           result["amount"] + gain, time.time(), author)
         else:
-            await self.bot.db.execute("INSERT INTO economy (user, amount, cd) "
-                                      "VALUES ($1, $2, $3)", author, gain, time.time())
+            await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time) "
+                                      "VALUES ($1, $2, $3, 0, 0)", author, gain, time.time())
 
     @commands.command()
     async def balance(self, ctx):
         check = await self.user_check(ctx.author.id)
 
         if check[0]:
-            result = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user=$1", ctx.author.id)
+            result = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
             await ctx.send(f"💎 | You have **${result['amount']}** credits.")
         else:
             await ctx.send("You haven't earned any credits yet!")
 
-    """@commands.command()
-    # @commands.cooldown(1, 3600*24, type=commands.BucketType.user)  # 24 hour cooldown
+    @commands.command()
     async def daily(self, ctx):
         author = ctx.author.id
 
         check = await self.user_check(author)
 
         if check[0]:
-            result = await self.bot.db.fetchrow("SELECT amount, streak, streak_time FROM economy WHERE user=$1",
+            result = await self.bot.db.fetchrow("SELECT amount, streak, streak_time FROM economy WHERE user_id=$1",
                                                 author)
 
             streak = 0
@@ -82,7 +81,7 @@ class Economy(commands.Cog):
 
             net_gain = result["amount"] + self.daily_gain + streak_bonus
 
-            await self.bot.db.execute("UPDATE economy SET amount=$1, streak=$2, streak_time=$3 WHERE user=$4",
+            await self.bot.db.execute("UPDATE economy SET amount=$1, streak=$2, streak_time=$3 WHERE user_id=$4",
                                       net_gain, streak, time.time(), author)
 
             msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: {streak}**"
@@ -91,12 +90,12 @@ class Economy(commands.Cog):
                 msg += f"\n\n**You completed a streak and earned an extra ${streak_bonus} credits ({net_gain} total)!**"
 
         else:
-            await self.bot.db.execute("INSERT INTO economy (user, amount, cd, streak, streak_time) "
+            await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time) "
                                       "VALUES ($1, $2, $3, 1, $4)", author, self.daily_gain, time.time(), time.time())
 
             msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: 1**"
 
-        await ctx.send(msg)"""
+        await ctx.send(msg)
 
 
 def setup(bot):

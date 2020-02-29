@@ -24,9 +24,7 @@ class Economy(commands.Cog):
     async def economy_table(self):
         await self.bot.wait_until_ready()
 
-        await self.bot.db.execute(
-            "CREATE TABLE IF NOT EXISTS economy(user BIGINT, amount BIGINT, cd REAL, streak BIGINT, streak_time REAL)"
-        )
+        await self.bot.db.execute("CREATE TABLE IF NOT EXISTS economy(user BIGINT, amount BIGINT, cd REAL, streak BIGINT, streak_time REAL)")
 
     async def user_check(self, user_id):
         return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM economy WHERE user=$1)", user_id)

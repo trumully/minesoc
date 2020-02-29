@@ -21,7 +21,7 @@ class Economy(commands.Cog):
     async def on_message(self, message):
         author = message.author.id
 
-        if self.user_check(author):
+        if await self.user_check(author):
             initial_amount = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", author)
             await self.bot.db.execute("UPDATE economy SET amount=$1 WHERE user_id=$2", initial_amount + 5, author)
         else:
@@ -29,7 +29,7 @@ class Economy(commands.Cog):
 
     @commands.command()
     async def balance(self, ctx):
-        if self.user_check(ctx.author.id):
+        if await self.user_check(ctx.author.id):
             balance = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
             await ctx.send(f"💎 | You have **{balance}** credits.")
         else:

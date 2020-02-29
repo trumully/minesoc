@@ -33,8 +33,8 @@ class Economy(commands.Cog):
         check = await self.user_check(ctx.author.id)
 
         if check[0]:
-            balance = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
-            await ctx.send(f"💎 | You have **{balance}** credits.")
+            result = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
+            await ctx.send(f"💎 | You have **{result['amount']}** credits.")
         else:
             await ctx.send("You haven't earned any credits yet!")
 

@@ -89,6 +89,12 @@ class Minesoc(Bot):
         else:
             self.load_extension("jishaku")
 
+    async def on_message(self, message):
+        if message.author.id in self.user_blacklist:
+            return
+        else:
+            await self.process_commands(message)
+
     async def on_ready(self):
         self.dev_guild = self.get_guild(int(self.config.dev_guild))
         self._emojis.fetch_emojis(self.dev_guild)

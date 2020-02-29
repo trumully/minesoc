@@ -156,7 +156,7 @@ class Fun(commands.Cog):
         await ctx.send(embed=robohash(query, 5, ctx.author))
 
     @commands.command(aliases=["choice"])
-    async def choose(self, ctx, *, options):
+    async def choose(self, ctx, *options):
         """Having trouble making a decision? I'll make it for you!"""
         await ctx.send(f"I choose: {choice(options)}")
 
@@ -166,6 +166,7 @@ class Fun(commands.Cog):
         await ctx.send(f"> {query}\n🎱 {choice(_8ball)}")
 
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def curse(self, ctx, member: discord.Member = None):
         message = f"**{str(ctx.author)}** cursed **{str(member)}**!" if member else f"**{str(ctx.author)}** cursed themself?"
         await ctx.send(message, file=discord.File("videos/curse.mp4", filename="curse.mp4"))

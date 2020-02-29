@@ -2,6 +2,7 @@ import asyncio
 import time
 
 import discord
+import asyncpg
 from discord.ext import commands
 
 LEVEL_COOLDOWN = 120

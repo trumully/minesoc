@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import asyncpg
 import time
 from datetime import datetime
 from pathlib import Path

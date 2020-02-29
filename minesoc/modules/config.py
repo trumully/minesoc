@@ -1,6 +1,7 @@
 # config.py
 # This extension handles certain bot configurations.
 import asyncio
+import asyncpg
 
 import discord
 from discord.ext import commands

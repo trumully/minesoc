@@ -135,7 +135,7 @@ class General(commands.Cog):
         """General information about the bot"""
         guild_amount = len(self.bot.guilds)
         user_amount = len(self.bot.users)
-        links = [f"[Support Server]({self.bot.invite_url})", "[Invite]({self.bot.oauth()})",
+        links = [f"[Support Server]({self.bot.invite_url})", f"[Invite]({self.bot.oauth()})",
                  f"[Trello](https://trello.com/b/Lf0eO7wv)", f"[Github](https://github.com/trumully/minesoc)"]
         uptime = datetime.timedelta(microseconds=(time.time_ns() - self.bot.start_time) / 1000)
         uptime = str(uptime).split(".")[0]

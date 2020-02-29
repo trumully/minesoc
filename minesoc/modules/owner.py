@@ -114,6 +114,16 @@ class Owner(commands.Cog):
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
 
+    @blacklist.command(name="refresh")
+    async def blacklist_refresh(self, ctx):
+        try:
+            self.user_blacklist = [u["id"] for u in (await self.bot.db.fetch("SELECT id FROM user_blacklist"))]
+            self.guild_blacklist = [g["id"] for g in (await self.bot.db.fetch("SELECT id FROM guild_blacklist"))]
+            await ctx.message.add_reaction(self.bot.emojis.green_tick)
+        except Exception as e:
+            await ctx.message.add_reaction(self.bot.emojis.red_tick)
+            self.bot.logger.error("Blacklist could not be refreshed.", exc_info=e)
+
     @blacklist.command(name="show")
     async def blacklist_show(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild]):
         """Show a entry from the blacklist"""

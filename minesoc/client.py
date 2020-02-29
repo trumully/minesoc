@@ -90,7 +90,7 @@ class Minesoc(Bot):
             self.load_extension("jishaku")
 
     async def on_message(self, message):
-        if message.author.id in self.user_blacklist:
+        if message.author.id in self.user_blacklist or message.guild.id in self.guild_blacklist:
             return
         else:
             await self.process_commands(message)

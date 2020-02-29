@@ -135,10 +135,12 @@ class General(commands.Cog):
         """General information about the bot"""
         guild_amount = len(self.bot.guilds)
         user_amount = len(self.bot.users)
+        links = [f"[Support Server]({self.bot.invite_url})", "[Invite]({self.bot.oauth()})",
+                 f"[Trello](https://trello.com/b/Lf0eO7wv)", f"[Github](https://github.com/trumully/minesoc)"]
         uptime = datetime.timedelta(microseconds=(time.time_ns() - self.bot.start_time) / 1000)
         uptime = str(uptime).split(".")[0]
         embed = discord.Embed(
-            title=f"{self.bot.custom_emojis.bot} About: {self.bot.user.name} | ID: {self.bot.user.id}",
+            title=f"{self.bot.custom_emojis.minesoc} About: {self.bot.user.name} | ID: {self.bot.user.id}",
             description=f"{self.bot.description}\n"
                         f"Serving **{user_amount} users** on **{guild_amount} guilds**",
             color=self.bot.colors.neutral)
@@ -149,10 +151,7 @@ class General(commands.Cog):
         embed.add_field(name="Process", value=f"{self.bot.custom_emojis.cpu} {psutil.cpu_percent()}% / "
                                               f"{round(psutil.cpu_freq().current, 2)}MHz\n"
                                               f"{self.bot.custom_emojis.vram} {psutil.virtual_memory()[2]}%")
-        embed.add_field(name="Links",
-                        value=f"[Support Server]({self.bot.invite_url}) | [Invite]({self.bot.oauth()}) | [Trello]("
-                              f"https://trello.com/b/Lf0eO7wv)",
-                        inline=False)
+        embed.add_field(name="Links", value=" | ".join(links), inline=False)
 
         await ctx.send(embed=embed)
 

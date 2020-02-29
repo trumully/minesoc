@@ -22,7 +22,8 @@ class Economy(commands.Cog):
         author = message.author.id
 
         if self.user_check(author):
-            await self.bot.db.execute("UPDATE economy SET amount=amount+5 WHERE user_id=$1", author)
+            initial_amount = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", author)
+            await self.bot.db.execute("UPDATE economy SET amount=$1 WHERE user_id=$2", initial_amount + 5, author)
         else:
             await self.bot.db.execute("INSERT INTO economy (user_id, amount) VALUES ($1, 5)", author)
 

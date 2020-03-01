@@ -91,10 +91,10 @@ class Minesoc(Bot):
 
     async def on_message(self, message):
         author = message.author.id
-        user = await self.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE user_id=$1)", author)
+        user = await self.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$1)", author)
 
-        if user[0]:
-            self.logger.debug(f"{message.author.id} is blacklised")
+        if user[0] or author in self.user_blacklist:
+            return
         else:
             await self.process_commands(message)
 

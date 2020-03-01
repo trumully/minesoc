@@ -105,11 +105,11 @@ class Owner(commands.Cog):
         if isinstance(target, discord.User):
             check = await self.check_user(target.id, table)
         else:
-            guild = discord.utils.get(self.bot.guilds, id=target)
+            guild = discord.utils.get(self.bot.guilds, id=int(target))
             if not guild:
                 return
 
-            check = await self.check_user(target, table)
+            check = await self.check_user(int(target), table)
 
         if not check[0]:
             await self.add_blacklist(target.id, table, reason)
@@ -132,7 +132,7 @@ class Owner(commands.Cog):
         if isinstance(target, discord.User):
             check = await self.check_user(target.id, table)
         else:
-            check = await self.check_user(target, table)
+            check = await self.check_user(int(target), table)
 
         if check[0]:
             await self.remove_blacklist(target.id, table)

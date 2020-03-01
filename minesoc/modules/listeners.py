@@ -113,7 +113,9 @@ class Listeners(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        if guild.id in self.bot.guild_blacklist:
+        check = await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM guild_blacklist WHERE id=$1)", guild.id)
+
+        if check[0]:
             try:
                 embed = discord.Embed(color=self.bot.colors.red,
                                       description=f"Your guild / server tried to add me, but the ID is blacklisted. "

@@ -20,7 +20,7 @@ class Owner(commands.Cog):
         if table == "user_blacklist":
             return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$1)", id)
         else:
-            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$1)", id)
+            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM guild_blacklist WHERE id=$1)", id)
 
     async def add_blacklist(self, id, table, reason):
         if table == "user_blacklist":
@@ -97,7 +97,7 @@ class Owner(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @blacklist.command(name="add")
-    async def blacklist_add(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild], *,
+    async def blacklist_add(self, ctx: commands.Context, target: typing.Union[discord.User, int], *,
                             reason: str = "No reason given."):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
@@ -110,7 +110,7 @@ class Owner(commands.Cog):
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
     @blacklist.command(name="remove")
-    async def blacklist_remove(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild]):
+    async def blacklist_remove(self, ctx: commands.Context, target: typing.Union[discord.User, int]):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         check = await self.check_user(target.id, table)
@@ -122,7 +122,7 @@ class Owner(commands.Cog):
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
 
     @blacklist.command(name="show")
-    async def blacklist_show(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild]):
+    async def blacklist_show(self, ctx: commands.Context, target: typing.Union[discord.User, int]):
         """Show a entry from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         check = await self.check_user(target.id, table)

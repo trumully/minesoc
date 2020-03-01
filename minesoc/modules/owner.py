@@ -97,8 +97,7 @@ class Owner(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @blacklist.command(name="add")
-    async def blacklist_add(self, ctx: commands.Context, target: typing.Union[discord.User, int], *,
-                            reason: str = "No reason given."):
+    async def blacklist_add(self, ctx: commands.Context, target, *, reason: str = "No reason given."):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         guild = None
@@ -107,7 +106,7 @@ class Owner(commands.Cog):
             check = await self.check_user(target.id, table)
         else:
             guild = discord.utils.get(self.bot.guilds, id=target)
-            if guild is None:
+            if not guild:
                 return
 
             check = await self.check_user(target, table)
@@ -127,7 +126,7 @@ class Owner(commands.Cog):
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
     @blacklist.command(name="remove")
-    async def blacklist_remove(self, ctx: commands.Context, target: typing.Union[discord.User, int]):
+    async def blacklist_remove(self, ctx: commands.Context, target):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         if isinstance(target, discord.User):
@@ -142,7 +141,7 @@ class Owner(commands.Cog):
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
 
     @blacklist.command(name="show")
-    async def blacklist_show(self, ctx: commands.Context, target: typing.Union[discord.User, int]):
+    async def blacklist_show(self, ctx: commands.Context, target):
         """Show a entry from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         check = await self.check_user(target.id, table)

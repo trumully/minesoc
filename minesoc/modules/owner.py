@@ -112,7 +112,11 @@ class Owner(commands.Cog):
             check = await self.check_user(int(target), table)
 
         if not check[0]:
-            await self.add_blacklist(target.id, table, reason)
+            if isinstance(target, discord.User):
+                await self.add_blacklist(target.id, table, reason)
+            else:
+                await self.add_blacklist(int(target), table, reason)
+
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
             if not isinstance(target, discord.User):
                 embed = discord.Embed(color=self.bot.colors.red,

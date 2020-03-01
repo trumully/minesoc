@@ -16,9 +16,11 @@ class Owner(commands.Cog):
         else:
             return True
 
-    async def reload_blacklist(self):
-        self.bot.user_blacklist = [u["id"] for u in (await self.bot.db.fetch("SELECT id FROM user_blacklist"))]
-        self.bot.guild_blacklist = [g["id"] for g in (await self.bot.db.fetch("SELECT id FROM guild_blacklist"))]
+    async def check_user(self, id, table):
+        if table == "user_blacklist":
+            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$2)", id)
+        else:
+            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$2)", id)
 
     async def add_blacklist(self, id, table, reason):
         if table == "user_blacklist":
@@ -99,11 +101,11 @@ class Owner(commands.Cog):
                             reason: str = "No reason given."):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
+        check = await self.check_user(target.id, table)
 
-        if target not in self.bot.user_blacklist and target not in self.bot.guild_blacklist:
+        if not check[0]:
             await self.add_blacklist(target.id, table, reason)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
-            await self.reload_blacklist()
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
@@ -111,11 +113,11 @@ class Owner(commands.Cog):
     async def blacklist_remove(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild]):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
+        check = await self.check_user(target.id, table)
 
-        if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
+        if check[0]:
             await self.remove_blacklist(target.id, table)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
-            await self.reload_blacklist()
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
 
@@ -123,8 +125,9 @@ class Owner(commands.Cog):
     async def blacklist_show(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild]):
         """Show a entry from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
+        check = await self.check_user(target.id, table)
 
-        if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
+        if check[0]:
             entry = await self.get_blacklist_entry(target.id, table)
             embed = discord.Embed(color=self.bot.colors.neutral)
             if isinstance(target, discord.User):

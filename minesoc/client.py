@@ -93,7 +93,7 @@ class Minesoc(Bot):
         author = message.author.id
         user = await self.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$1)", author)
 
-        if user[0] or author in self.user_blacklist:
+        if user[0]:
             return
         else:
             await self.process_commands(message)

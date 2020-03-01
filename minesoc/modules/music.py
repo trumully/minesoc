@@ -69,11 +69,12 @@ class Music(commands.Cog):
             await self.connect_to(guild_id, None)
             # Disconnect from the channel -- there's nothing else to play.
         if isinstance(event, lavalink.events.TrackStartEvent):
-            context = event.player.fetch("context")
-            track = event.player.fetch("track")
-            embed = discord.Embed(color=discord.Color.blurple(), title="Now Playing",
-                                  description=f"[{event.track.title}]({track})")
-            await context.send(embed=embed)
+            if not event.player.loop:
+                context = event.player.fetch("context")
+                track = event.player.fetch("track")
+                embed = discord.Embed(color=discord.Color.blurple(), title="Now Playing",
+                                      description=f"[{event.track.title}]({track})")
+                await context.send(embed=embed)
 
     async def connect_to(self, guild_id: int, channel_id: str):
         """ Connects to the given voice channel ID. A channel_id of `None` means disconnect. """

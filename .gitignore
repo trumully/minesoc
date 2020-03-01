@@ -1,8 +1,6 @@
 venv/
 lavalink-logs/
 Lavalink.jar
-guild_config.json
-prefixes.json
 config.json
 /requirements.txt
 /application.yml

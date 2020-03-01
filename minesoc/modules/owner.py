@@ -121,7 +121,9 @@ class Owner(commands.Cog):
                                                   f"[Support server]({self.bot.invite_url})")
                 await guild.owner.send(embed=embed)
                 await guild.leave()
-
+                self.bot.logger.info(f"Added guild with ID {target} to blacklist.")
+            else:
+                self.bot.logger.info(f"Added user with ID {target.id} to blacklist")
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
@@ -131,11 +133,13 @@ class Owner(commands.Cog):
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         if isinstance(target, discord.User):
             check = await self.check_user(target.id, table)
+            target = target.id
         else:
             check = await self.check_user(int(target), table)
+            target = int(target)
 
         if check[0]:
-            await self.remove_blacklist(target.id, table)
+            await self.remove_blacklist(target, table)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")

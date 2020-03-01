@@ -90,7 +90,10 @@ class Minesoc(Bot):
             self.load_extension("jishaku")
 
     async def on_message(self, message):
-        if message.author.id in self.user_blacklist or message.guild.id in self.guild_blacklist:
+        author = message.author.id
+        user = await self.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE user_id=$1)", author)
+
+        if user["exists"] or author in self.user_blacklist:
             return
         else:
             await self.process_commands(message)

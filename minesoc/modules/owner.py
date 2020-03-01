@@ -30,10 +30,9 @@ class Owner(commands.Cog):
 
     async def get_blacklist_entry(self, id, table):
         if table == "user_blacklist":
-            b = await self.bot.db.fetchrow("SELECT * FROM user_blacklist WHERE id=$1", id)
+            return await self.bot.db.fetchrow("SELECT * FROM user_blacklist WHERE id=$1", id)
         else:
-            b = await self.bot.db.fetchrow("SELECT * FROM guild_blacklist WHERE id=$1", id)
-        return b
+            return await self.bot.db.fetchrow("SELECT * FROM guild_blacklist WHERE id=$1", id)
 
     @commands.command()
     async def load(self, ctx, module: str):

@@ -16,6 +16,10 @@ class Owner(commands.Cog):
         else:
             return True
 
+    async def reload_blacklist(self):
+        self.bot.user_blacklist = [u["id"] for u in (await self.bot.db.fetch("SELECT id FROM user_blacklist"))]
+        self.bot.guild_blacklist = [g["id"] for g in (await self.bot.db.fetch("SELECT id FROM guild_blacklist"))]
+
     async def add_blacklist(self, id, table, reason):
         if table == "user_blacklist":
             await self.bot.db.execute("INSERT INTO user_blacklist (id, reason) VALUES ($1, $2)", id, reason)
@@ -99,6 +103,7 @@ class Owner(commands.Cog):
         if target not in self.bot.user_blacklist and target not in self.bot.guild_blacklist:
             await self.add_blacklist(target.id, table, reason)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
+            await self.reload_blacklist()
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
@@ -110,18 +115,9 @@ class Owner(commands.Cog):
         if target in self.bot.user_blacklist or target in self.bot.guild_blacklist:
             await self.remove_blacklist(target.id, table)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
+            await self.reload_blacklist()
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
-
-    @blacklist.command(name="refresh")
-    async def blacklist_refresh(self, ctx):
-        try:
-            self.bot.user_blacklist = [u["id"] for u in (await self.bot.db.fetch("SELECT id FROM user_blacklist"))]
-            self.bot.guild_blacklist = [g["id"] for g in (await self.bot.db.fetch("SELECT id FROM guild_blacklist"))]
-            await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
-        except Exception as e:
-            await ctx.message.add_reaction(self.bot.custom_emojis.red_tick)
-            self.bot.logger.error("Blacklist could not be refreshed.", exc_info=e)
 
     @blacklist.command(name="show")
     async def blacklist_show(self, ctx: commands.Context, target: typing.Union[discord.User, discord.Guild]):

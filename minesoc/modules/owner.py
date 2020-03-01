@@ -101,11 +101,28 @@ class Owner(commands.Cog):
                             reason: str = "No reason given."):
         """Add a guild or user to the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
-        check = await self.check_user(target.id, table)
+        guild = None
+
+        if isinstance(target, discord.User):
+            check = await self.check_user(target.id, table)
+        else:
+            guild = discord.utils.get(self.bot.guilds, id=target)
+            if guild is None:
+                return
+
+            check = await self.check_user(target, table)
 
         if not check[0]:
             await self.add_blacklist(target.id, table, reason)
             await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
+            if not isinstance(target, discord.User):
+                embed = discord.Embed(color=self.bot.colors.red,
+                                      description=f"Your guild / server has been blacklisted. "
+                                                  f"If you wish to know the reason, join the "
+                                                  f"[Support server]({self.bot.invite_url})")
+                await guild.owner.send(embed=embed)
+                await guild.leave()
+
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is already blacklisted.")
 
@@ -113,7 +130,10 @@ class Owner(commands.Cog):
     async def blacklist_remove(self, ctx: commands.Context, target: typing.Union[discord.User, int]):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
-        check = await self.check_user(target.id, table)
+        if isinstance(target, discord.User):
+            check = await self.check_user(target.id, table)
+        else:
+            check = await self.check_user(target, table)
 
         if check[0]:
             await self.remove_blacklist(target.id, table)

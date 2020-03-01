@@ -18,9 +18,9 @@ class Owner(commands.Cog):
 
     async def check_user(self, id, table):
         if table == "user_blacklist":
-            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$2)", id)
+            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$1)", id)
         else:
-            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$2)", id)
+            return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM user_blacklist WHERE id=$1)", id)
 
     async def add_blacklist(self, id, table, reason):
         if table == "user_blacklist":

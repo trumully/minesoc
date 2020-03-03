@@ -36,7 +36,7 @@ class Trivia(commands.Cog):
             except asyncio.TimeoutError:
                 await ctx.send(embed=discord.Embed(title="❗ You took too long!", color=self.bot.colors.red))
             else:
-                if int(message.content) == result.answers.index(result.correct_answer) + 1:
+                if int(message.content) == result.answers.index(result.correct) + 1:
                     await ctx.send(embed=discord.Embed(title="Correct!", color=self.bot.colors.green))
                 else:
                     await ctx.send(embed=discord.Embed(title="Incorrect!", color=self.bot.colors.neutral))

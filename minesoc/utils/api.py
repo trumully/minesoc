@@ -43,11 +43,12 @@ class Trivia:
 
             embed = discord.Embed(color=discord.Color(0xffffff))
             embed.title = "❔ Here's a question!"
-            embed.description = f"A {self.difficulty} one from the {self.category} category"
-            embed.add_field(name="Question", value=self.question)
+            embed.description = f"{'An' if self.difficulty == 'easy' else 'A'} {self.difficulty} one from the " \
+                                f"{self.category} category"
+            embed.add_field(name="Question", value=self.question, inline=False)
 
             choices = "\n".join(f"[{index + 1}] {answer}" for index, answer in enumerate(self.answers))
-            embed.add_field(name="Choices", value=f"```py\n{choices}```")
+            embed.add_field(name="Choices", value=f"```py\n{choices}```", inline=False)
             embed.set_footer(text="Input the number of your chosen answer")
 
             return embed

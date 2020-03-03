@@ -132,7 +132,7 @@ class Minesoc(Bot):
         seconds %= 3600
         minutes = seconds // 60
         seconds %= 60
-        if hour == 0:
+        if hour <= 0:
             return "%02d:%02d" % (minutes, seconds)
         return "%d:%02d:%02d" % (hour, minutes, seconds)
 

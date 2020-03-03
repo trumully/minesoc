@@ -7,7 +7,7 @@ from discord.ext import commands
 from libneko.aggregates import Proxy
 
 COOLDOWN = 120  # 2 minutes
-STREAK_TIMER = 3600 * 28  # 28 hours
+STREAK_TIMER = 3600 * 44  # 44 hours
 
 
 class Economy(commands.Cog):

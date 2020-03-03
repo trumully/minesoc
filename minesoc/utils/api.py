@@ -2,13 +2,66 @@ import re
 
 import aiohttp
 import discord
+import random
 
 
 class API:
     def __init__(self, bot):
         self.session = aiohttp.ClientSession()
         self.animal = Animal(self.session)
+        self.trivia = Trivia(self.session)
         self.bot = bot
+
+
+class Trivia:
+    class TriviaResponse:
+        def __init__(self, response):
+            self._info = response
+
+            # 0 = Success
+            # 1 = No Results
+            # 2 = Invalid parameter
+            self.response_code = response["response_code"]
+
+            self.result = self._info["results"][0]
+
+            self.question = self.result["question"]
+            self.category = self.result["category"]
+            self.type = self.result["type"]
+            self.difficulty = self.result["difficulty"]
+
+            self.correct = self.result["correct_answer"]
+            self.answers = [a for a in self.result["incorrect_answers"].values()]
+            self.answers.append(self.correct)
+            random.shuffle(self.answers)
+
+            self.embed = self.__generate_embed__()
+
+        def __generate_embed__(self):
+            if self.response_code != 0:
+                return self.response_code
+
+            embed = discord.Embed(color=discord.Color(0xffffff))
+            embed.title = "❔ Here's a question!"
+            embed.description = f"A {self.difficulty} one from the {self.category} category"
+            embed.add_field(name="Question", value=self.question)
+
+            choices = "\n".join(f"[{index + 1}] {answer}" for index, answer in enumerate(self.answers))
+            embed.add_field(name="Choices", value=f"```py\n{choices}```")
+            embed.set_footer(text="Input the number of your chosen answer")
+
+            return embed
+
+    def __init__(self, session: aiohttp.ClientSession()):
+        self.session = session
+        self.query_url = "https://opentdb.com/api.php?amount=1"
+
+    async def get_trivia(self):
+        async with self.session.get(self.query_url) as r:
+            if r.status == 200:
+                return self.TriviaResponse(response=await r.json())
+            else:
+                return False
 
 
 class Animal:

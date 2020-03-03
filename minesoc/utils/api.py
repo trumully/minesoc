@@ -31,7 +31,7 @@ class Trivia:
             self.difficulty = self.result["difficulty"]
 
             self.correct = self.result["correct_answer"]
-            self.answers = [a for a in self.result["incorrect_answers"].values()]
+            self.answers = [a for a in self.result["incorrect_answers"]]
             self.answers.append(self.correct)
             random.shuffle(self.answers)
 

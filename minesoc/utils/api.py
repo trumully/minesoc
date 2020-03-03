@@ -1,6 +1,7 @@
 import re
 
 import aiohttp
+import html
 import discord
 import random
 
@@ -25,13 +26,13 @@ class Trivia:
 
             self.result = self._info["results"][0]
 
-            self.question = self.result["question"]
+            self.question = html.unescape(self.result["question"])
             self.category = self.result["category"]
             self.type = self.result["type"]
             self.difficulty = self.result["difficulty"]
 
-            self.correct = self.result["correct_answer"]
-            self.answers = [a for a in self.result["incorrect_answers"]]
+            self.correct = html.unescape(self.result["correct_answer"])
+            self.answers = [html.unescape(a) for a in self.result["incorrect_answers"]]
             self.answers.append(self.correct)
             random.shuffle(self.answers)
 

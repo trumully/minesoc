@@ -16,7 +16,7 @@ class Trivia(commands.Cog):
         result = await self.bot.api.trivia.get_trivia()
 
         if isinstance(result.embed, discord.Embed):
-            await ctx.send(embed=result)
+            await ctx.send(embed=result.embed)
 
             responses = [i + 1 for i in range(len(result.answers))]
 

@@ -2,73 +2,13 @@
 # This extension handles level ups
 
 from io import BytesIO
-from math import log, floor
 from os import listdir
 
 import aiohttp.client
 import discord
 import asyncpg
-from PIL import Image, ImageDraw, ImageFont, ImageOps
 from discord.ext import commands
-
-
-def human_format(number):
-    units = ['', 'K', 'M', 'G', 'T', 'P']
-    k = 1000.0
-    magnitude = int(floor(log(number, k)))
-    if magnitude == 0:
-        return number
-    else:
-        return '%.2f%s' % (number / k ** magnitude, units[magnitude])
-
-
-class Rank:
-    def __init__(self):
-        self.font = ImageFont.truetype("arialbd.ttf", 28 * 2)
-        self.medium_font = ImageFont.truetype("arialbd.ttf", 22 * 2)
-        self.small_font = ImageFont.truetype("arialbd.ttf", 16 * 2)
-
-    def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
-        profile_bytes = Image.open(profile_bytes)
-        w, h = (256, 256)
-        profile_bytes = profile_bytes.resize((w, h))
-
-        if bg is not None and bg != "default":
-            bg_img = Image.open(f"backgrounds/{bg}.jpg")
-            im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
-        else:
-            im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
-
-        im_draw = ImageDraw.Draw(im)
-
-        # User name
-        im_draw.text((350, 10), user, font=self.font, fill=color)
-
-        # Level
-        lvl_text = f"LEVEL {lvl}"
-        im_draw.text((350, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
-
-        # XP progress
-        xp_text = f"{human_format(xp)} / {human_format(round((4 * (lvl ** 3) / 5)))} XP"
-        im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
-
-        # XP progress bar
-        im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
-        progress = xp / round((4 * (lvl ** 3) / 5))
-        im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)
-
-        # Avatar border
-        im_draw.ellipse((28, 0, w + 40 + 28, h + 40), fill=color)
-
-        # Avatar
-        circle = Image.open("images/circle.png")
-        im.paste(profile_bytes, (48, 20), circle)
-
-        buffer = BytesIO()
-        im.save(buffer, "png")
-        buffer.seek(0)
-
-        return buffer
+from minesoc.utils import images
 
 
 class Levels(commands.Cog):
@@ -98,7 +38,7 @@ class Levels(commands.Cog):
             if member.bot:
                 return
 
-            rankcard = Rank()
+            profile = images.Profile()
 
             member_id = member.id
             guild_id = ctx.guild.id
@@ -110,8 +50,8 @@ class Levels(commands.Cog):
                     async with session.get(f"{member.avatar_url}") as r:
                         profile_bytes = await r.read()
 
-                buffer = rankcard.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
-                                       discord.Color(user["color"]).to_rgb(), user["bg"])
+                buffer = profile.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
+                                      discord.Color(user["color"]).to_rgb(), user["bg"])
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
             else:
@@ -161,10 +101,10 @@ class Levels(commands.Cog):
             user_info = ""
             user_name = ""
             rankings = ""
-            for idx, val in zip(range(10), users):
-                user = self.bot.get_user(val["user_id"])
+            for index, value in zip(range(10), users):
+                user = self.bot.get_user(value["user_id"])
                 if user:
-                    rank = idx + 1
+                    rank = index + 1
                     if rank <= 3:
                         if rank == 1:
                             top_user = f"Top Member: 🏆 **{str(user)}**"
@@ -173,12 +113,10 @@ class Levels(commands.Cog):
                         rank = f"#{rank}\n"
                     rankings += rank
                     user_name += f"**{user.name}**\n"
-                    xp_to_next = round((4 * (val["lvl"] ** 3) / 5))
-                    user_info += f"Level {val['lvl']} ({val['xp']}/{xp_to_next})\n"
+                    xp_to_next = round((4 * (value["lvl"] ** 3) / 5))
+                    user_info += f"Level {value['lvl']} ({value['xp']}/{xp_to_next})\n"
 
-            embed = discord.Embed(color=ctx.me.colour,
-                                  title=f"Top 10 in {ctx.guild.name}",
-                                  description=top_user,
+            embed = discord.Embed(color=ctx.me.colour, title=f"Top 10 in {ctx.guild.name}", description=top_user,
                                   timestamp=ctx.message.created_at)
             embed.add_field(name="Rank", value=rankings, inline=True)
             embed.add_field(name="Member", value=user_name, inline=True)

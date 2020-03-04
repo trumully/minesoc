@@ -9,6 +9,7 @@ import discord
 import asyncpg
 from discord.ext import commands
 from minesoc.utils import images
+from pathlib import Path
 
 
 class Levels(commands.Cog):
@@ -75,6 +76,8 @@ class Levels(commands.Cog):
 
         for file in listdir("backgrounds/"):
             available_bgs.append(str(file[:-4]))
+
+        available_bgs = [str(file[:-4]) for file in (self.bot.path / "backgrounds").iterdir()]
 
         if image not in available_bgs and image != "default" or image is None:
             return await ctx.send(f"List of available backgrounds:\n```{', '.join(available_bgs)}```")

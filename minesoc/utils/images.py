@@ -1,3 +1,7 @@
+import textwrap
+import aiohttp
+import datetime
+
 from io import BytesIO
 from math import log, floor
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -11,6 +15,17 @@ def human_format(number):
         return number
     else:
         return '%.2f%s' % (number / k ** magnitude, units[magnitude])
+
+
+def seconds_to_hms(seconds):
+    seconds = seconds % (24 * 3600)
+    hour = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+    if hour == 0:
+        return "%02d:%02d" % (minutes, seconds)
+    return "%d:%02d:%02d" % (hour, minutes, seconds)
 
 
 class Profile:
@@ -86,8 +101,71 @@ class Profile:
 
         return buffer
 
-    def circle(self, draw, center, radius, fill):
-        draw.ellipse(
-            (center[0] - radius + 1, center[1] - radius + 1, center[0] + radius - 1, center[1] + radius - 1),
-            fill=fill, outline=None
-        )
+
+class SpotifyImage:
+    def __init__(self):
+        self.font = ImageFont.truetype("arial-unicode-ms.ttf", 16)
+        self.session = aiohttp.ClientSession()
+
+    def draw(self, name, artists, color, album_bytes: BytesIO, track_duration=None, time_end=None):
+        album_bytes = Image.open(album_bytes)
+        size = (160, 160)
+        album_bytes = album_bytes.resize(size)
+
+        w, h = (500, 170)
+        im = Image.new("RGBA", (w, h), color)
+
+        im_draw = ImageDraw.Draw(im)
+        off_x, off_y, w, h = (5, 5, 495, 165)
+
+        font_size = 1
+        max_size = 20
+        img_fraction = 0.75
+
+        medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+        while medium_font.getsize(name)[0] < img_fraction * im.size[0]:
+            font_size += 1
+            medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+
+        if font_size >= max_size:
+            font_size = max_size
+
+        font_size -= 1
+        medium_font = ImageFont.truetype("arial-unicode-ms.ttf", font_size)
+
+        im_draw.rectangle((off_x, off_y, w, h), fill=(5, 5, 25))
+        im_draw.text((175, 15), name, font=medium_font, fill=(255, 255, 255, 255))
+
+        artist_text = ", ".join(artists)
+        artist_text = "\n".join(textwrap.wrap(artist_text, width=35))
+        im_draw.text((175, 45), artist_text, font=self.font, fill=(255, 255, 255, 255))
+
+        if time_end is not None and track_duration is not None:
+            now = datetime.datetime.utcnow()
+            percentage_played = 1 - (time_end - now).total_seconds() / track_duration.total_seconds()
+            im_draw.rectangle((175, 130, 375, 125), fill=(64, 64, 64, 255))
+            im_draw.rectangle((175, 130, 175 + int(200 * percentage_played), 125), fill=(254, 254, 254, 255))
+
+            track_duration = track_duration.total_seconds()
+            duration = f"{seconds_to_hms(track_duration * percentage_played)} / {seconds_to_hms(track_duration)}"
+            im_draw.text((175, 130), duration, font=self.font, fill=(255, 255, 255, 255))
+        else:
+            im_draw.text((175, 130), seconds_to_hms(track_duration), font=self.font, fill=(255, 255, 255, 255))
+
+        im.paste(album_bytes, (5, 5))
+
+        spotify_logo = Image.open("images/spotify-512.png")
+        spotify_logo = spotify_logo.resize((48, 48))
+        im.paste(spotify_logo, (437, 15), spotify_logo)
+
+        buffer = BytesIO()
+        im.save(buffer, "png")
+        buffer.seek(0)
+
+        return buffer
+
+    async def fetch_cover(self, cover_url):
+        async with self.session as s:
+            async with s.get(cover_url) as r:
+                if r.status == 200:
+                    return await r.read()

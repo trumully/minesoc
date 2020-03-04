@@ -77,7 +77,7 @@ class Levels(commands.Cog):
         for file in listdir("backgrounds/"):
             available_bgs.append(str(file[:-4]))
 
-        available_bgs = [str(file[:-4]) for file in (self.bot.path / "backgrounds").iterdir()]
+        available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir()]
 
         if image not in available_bgs and image != "default" or image is None:
             return await ctx.send(f"List of available backgrounds:\n```{', '.join(available_bgs)}```")

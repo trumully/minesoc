@@ -70,7 +70,7 @@ class Listeners(commands.Cog):
                 await self.bot.db.execute("UPDATE levels SET xp = $1, cd= $2 WHERE user_id = $3 AND guild_id = $4",
                                           user["xp"] + xp, time.time(), author, guild)
 
-            while await self.lvl_up(user):
+            if await self.lvl_up(user):
                 if do_msg:
                     await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
 

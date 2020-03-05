@@ -70,9 +70,11 @@ class Listeners(commands.Cog):
                 await self.bot.db.execute("UPDATE levels SET xp = $1, cd= $2 WHERE user_id = $3 AND guild_id = $4",
                                           user["xp"] + xp, time.time(), author, guild)
 
-            if await self.lvl_up(user):
+            lvl_up = await self.lvl_up(user)
+            while lvl_up:
                 if do_msg:
                     await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
+                lvl_up = await self.lvl_up(user)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):

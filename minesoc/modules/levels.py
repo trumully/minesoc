@@ -2,11 +2,11 @@
 # This extension handles level ups
 
 from io import BytesIO
-from os import listdir
 
 import aiohttp.client
 import discord
 import asyncpg
+
 from discord.ext import commands
 from minesoc.utils import images
 from pathlib import Path
@@ -72,11 +72,6 @@ class Levels(commands.Cog):
     @profile.command(pass_context=True, name="background", aliases=["bg"])
     async def profile_background(self, ctx, image: str = None):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
-        available_bgs = []
-
-        for file in listdir("backgrounds/"):
-            available_bgs.append(str(file[:-4]))
-
         available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir()]
 
         if image not in available_bgs and image != "default" or image is None:

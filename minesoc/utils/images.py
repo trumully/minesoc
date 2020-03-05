@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 def human_format(number):
     units = ['', 'K', 'M', 'G', 'T', 'P']
     k = 1000.0
-    magnitude = int(floor(log(number, k)))
+    magnitude = int(floor(log(number, k))) if number > 0 else int(floor(log(1, k)))
     if magnitude == 0:
         return number
     else:

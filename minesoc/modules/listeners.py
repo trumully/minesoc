@@ -48,13 +48,14 @@ class Listeners(commands.Cog):
         if do_lvl:
             author = int(message.author.id)
 
-            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1, guild_id=$2", author, guild)
+            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2", author, guild)
 
             if not user:
                 await self.bot.db.execute("INSERT INTO levels (user_id, guild_id, xp, lvl, cd, color, bg) "
                                           "VALUES ($1, $2, 0, 1, $3, $4, 'default')", author, guild, time.time(),
                                           0xFFFFFF)
-                user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1, guild_id=$2", author, guild)
+                user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2", author,
+                                                  guild)
 
             xp = self.bot.xp_gain()
 

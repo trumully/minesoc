@@ -12,11 +12,18 @@ class Listeners(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    def lvl_up(self, user):
-        cur_xp = user['xp']
-        cur_lvl = user['lvl']
+    async def lvl_up(self, user):
+        cur_xp = user["xp"]
+        cur_lvl = user["lvl"]
+        author = user["user_id"]
+        guild = user["guild_id"]
 
-        return bool(cur_xp >= round((4 * (cur_lvl ** 3) / 5)))
+        if cur_xp >= round((4 * (cur_lvl ** 3) / 5)):
+            await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
+                                      user["lvl"] + 1, author, guild)
+            return True
+        else:
+            return False
 
     async def bot_check(self, ctx):
         if not ctx.guild:
@@ -63,11 +70,9 @@ class Listeners(commands.Cog):
                 await self.bot.db.execute("UPDATE levels SET xp = $1, cd= $2 WHERE user_id = $3 AND guild_id = $4",
                                           user["xp"] + xp, time.time(), author, guild)
 
-            if self.lvl_up(user):
+            while await self.lvl_up(user):
                 if do_msg:
                     await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
-                await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
-                                          user["lvl"] + 1, author, guild)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):

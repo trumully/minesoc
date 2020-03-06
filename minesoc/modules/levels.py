@@ -126,13 +126,13 @@ class Levels(commands.Cog):
             author = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
                                                 ctx.author.id, guild)
 
-            author_check = [i for i, j in enumerate(users) if j == author]
+            author_check = [i + 1 for i, j in enumerate(users) if j == author]
 
             if author_check:
-                rankings += str(author_check[0])
+                rankings += f"#{author_check[0]}"
                 xp_to_next = round((4 * (author["lvl"] ** 3) / 5))
-                user_info += f"Level {author['lvl']} ({author['xp']})/({xp_to_next})"
-                user_name += ctx.author.name
+                user_info += f"Level {author['lvl']} ({author['xp']}/{xp_to_next})"
+                user_name += f"**{ctx.author.name}**"
 
             embed.add_field(name="Rank", value=rankings, inline=True)
             embed.add_field(name="Member", value=user_name, inline=True)

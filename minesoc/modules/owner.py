@@ -102,9 +102,9 @@ class Owner(commands.Cog):
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
         guild = None
 
-        if isinstance(target, discord.User):
+        try:
             check = await self.check_user(target.id, table)
-        else:
+        except Exception:
             guild = discord.utils.get(self.bot.guilds, id=int(target))
             if not guild:
                 return
@@ -135,6 +135,7 @@ class Owner(commands.Cog):
     async def blacklist_remove(self, ctx: commands.Context, target):
         """Remove a guild or user from the blacklist"""
         table = "user_blacklist" if isinstance(target, discord.User) else "guild_blacklist"
+
         if isinstance(target, discord.User):
             check = await self.check_user(target.id, table)
             target = target.id
@@ -155,15 +156,16 @@ class Owner(commands.Cog):
         check = await self.check_user(target.id, table)
 
         if check[0]:
-            entry = await self.get_blacklist_entry(target.id, table)
             embed = discord.Embed(color=self.bot.colors.neutral)
             if isinstance(target, discord.User):
+                entry = await self.get_blacklist_entry(target.id, table)
                 u = discord.utils.get(self.bot.users, id=target.id)
                 if u:
                     embed.set_author(name=f"User {u} ({u.id})", icon_url=u.avatar_url_as(static_format="png"))
                 else:
                     embed.set_author(name=f"User {u.id}")
             else:
+                entry = await self.get_blacklist_entry(target, table)
                 g = discord.utils.get(self.bot.guilds, id=target)
                 if g:
                     embed.set_author(name=f"Guild {g} ({g.id})", icon_url=g.icon_url_as(static_format="png"))

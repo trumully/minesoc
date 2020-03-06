@@ -32,16 +32,8 @@ class General(commands.Cog):
     @commands.command()
     async def ping(self, ctx: commands.Context):
         """Pong!"""
-        start_time = time.perf_counter()
-        ack = (time.perf_counter() - start_time) * 1000
-        heartbeat = self.bot.latency * 1000
-
-        async with ctx.typing():
-            embed = discord.Embed(color=self.bot.colors.neutral, title="🛰️ Pong!")
-            embed.add_field(name="💓 Heartbeat:", value=f"`{heartbeat:,.2f}ms`")
-            embed.add_field(name="🗄 ACK:", value=f"`{ack:,.2f}ms`")
-
-        await ctx.send(embed=embed)
+        ping = self.bot.latency * 1000
+        await ctx.send(embed=discord.Embed(color=self.bot.colors.neutral, title=f"🛰️ Pong! {ping}ms"))
 
     @commands.command(aliases=["minesoc"])
     async def about(self, ctx: commands.Context):
@@ -115,6 +107,7 @@ class General(commands.Cog):
         """Member information"""
         member = ctx.author if member is None else member
         embed = discord.Embed(color=member.color)
+        file = None
 
         embed.set_author(name=f"{member.name} ({member.id})")
         embed.set_thumbnail(url=member.avatar_url_as(static_format="png", size=1024))
@@ -124,10 +117,17 @@ class General(commands.Cog):
                         value=" | ".join([r.mention for r in member.roles if r != ctx.guild.default_role]),
                         inline=False)
         if isinstance(member.activity, discord.Spotify):
-            embed.add_field(name=f"Spotify",
-                            value=f"Listening to **{member.activity.title}** from "
-                                  f"**{', '.join(member.activity.artists)}**",
-                            inline=False)
+            card = images.SpotifyImage()
+
+            album_bytes = await card.fetch_cover(member.activity.album_cover_url)
+            color = member.activity.color.to_rgb()
+
+            end = member.activity.end
+            duration = member.activity.duration
+            buffer = card.draw(member.activity.title, member.activity.artists, color, BytesIO(album_bytes), duration,
+                               end)
+            file = discord.File(fp=buffer, filename="spotify.png")
+            embed.set_image(url="attachment://spotify.png")
         else:
             embed.add_field(name=f"Activity",
                             value=f"{member.activity.type.name.title()}"
@@ -136,7 +136,10 @@ class General(commands.Cog):
                             inline=False)
         embed.add_field(name="Permissions", value=self.format_permission(member.permissions_in(ctx.channel)))
 
-        await ctx.send(embed=embed)
+        if file:
+            await ctx.send(embed=embed, file=file)
+        else:
+            await ctx.send(embed=embed)
 
     @commands.command()
     async def avatar(self, ctx: commands.Context, *, member: discord.Member = None):
@@ -177,11 +180,11 @@ class General(commands.Cog):
                     embed.set_image(url="attachment://spotify.png")
                     return await ctx.send(embed=embed, file=file)
 
-            embed = discord.Embed(color=self.bot.colors.spotify)
-            embed.description = f"{self.bot.custom_emojis.spotify} " \
-                                f"{f'{user.mention} is' if user is not ctx.author else 'You are'} " \
-                                f"currently not listening to Spotify."
-            await ctx.send(embed=embed)
+        embed = discord.Embed(color=self.bot.colors.spotify)
+        embed.description = f"{self.bot.custom_emojis.spotify} " \
+                            f"{f'{user.mention} is' if user is not ctx.author else 'You are'} " \
+                            f"currently not listening to Spotify."
+        await ctx.send(embed=embed)
 
     @spotify.command(name="get")
     async def spotify_get(self, ctx, spotify_link):

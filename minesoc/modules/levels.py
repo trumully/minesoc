@@ -2,6 +2,7 @@
 # This extension handles level ups
 
 from io import BytesIO
+from itertools import count
 
 import aiohttp.client
 import discord
@@ -56,11 +57,12 @@ class Levels(commands.Cog):
 
                 await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
             else:
-                await ctx.send("Member hasn't received xp yet.")
+                await ctx.send(f"**{ctx.author.name}**, "
+                               f"{'this member has not' if member != ctx.author else 'you have not'} received XP yet.")
 
     @profile.command(pass_context=True, name="color", aliases=["colour"])
     async def profile_color(self, ctx, *, color: discord.Color):
-        """Change the highlight color used of your rank card."""
+        """Change the accent color used of your rank card."""
         member = ctx.author.id
         guild = ctx.guild.id
         async with ctx.typing():
@@ -110,12 +112,28 @@ class Levels(commands.Cog):
                     else:
                         rank = f"#{rank}\n"
                     rankings += rank
-                    user_name += f"**{user.name}**\n"
                     xp_to_next = round((4 * (value["lvl"] ** 3) / 5))
                     user_info += f"Level {value['lvl']} ({value['xp']}/{xp_to_next})\n"
+                    user_name += f"**{user.name}**\n"
+            else:
+                rankings += "...\n"
+                user_info += "...\n"
+                user_name += "...\n"
 
             embed = discord.Embed(color=ctx.me.colour, title=f"Top 10 in {ctx.guild.name}", description=top_user,
                                   timestamp=ctx.message.created_at)
+
+            author = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
+                                                ctx.author.id, guild)
+
+            author_check = [i for i, j in enumerate(users) if j == author]
+
+            if author_check:
+                rankings += author_check[0]
+                xp_to_next = round((4 * (author["lvl"] ** 3) / 5))
+                user_info += f"Level {author['lvl']} ({author['xp']})/({xp_to_next})"
+                user_name += ctx.author.name
+
             embed.add_field(name="Rank", value=rankings, inline=True)
             embed.add_field(name="Member", value=user_name, inline=True)
             embed.add_field(name="Level", value=user_info, inline=True)

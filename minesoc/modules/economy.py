@@ -56,9 +56,9 @@ class Economy(commands.Cog):
 
         if check[0]:
             result = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
-            await ctx.send(f"💎 | You have **${result['amount']}** credits.")
+            await ctx.send(f"💎 | {ctx.author.name} you have **${result['amount']}** credits.")
         else:
-            await ctx.send("**You haven't earned any credits yet!**")
+            await ctx.send(f"❗ | **{ctx.author.name} You haven't earned any credits yet!**")
 
     @commands.command()
     @commands.cooldown(1, 3600*24, type=commands.BucketType.user)  # 24 hour cooldown
@@ -76,7 +76,7 @@ class Economy(commands.Cog):
             else:
                 streak = result["streak"] + 1
 
-            msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: {streak}**"
+            msg = f"💸 | **{ctx.author.name}, you got ${self.daily_gain} credits!\n\nStreak: {streak}**"
 
             if streak % 5 == 0 and streak > 0:
                 streak_bonus = self.gen_currency(self.credit_gain) * 2
@@ -92,7 +92,7 @@ class Economy(commands.Cog):
             await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time) "
                                       "VALUES ($1, $2, $3, 1, $4)", author, self.daily_gain, time.time(), time.time())
 
-            msg = f"💸 | **You got ${self.daily_gain} credits!\n\nStreak: 1**"
+            msg = f"💸 | **{ctx.author.name}, you got ${self.daily_gain} credits!\n\nStreak: 1**"
 
         await ctx.send(msg)
 

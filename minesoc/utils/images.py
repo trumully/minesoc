@@ -5,16 +5,17 @@ import datetime
 from io import BytesIO
 from math import log, floor
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from pathlib import Path
 
 
 def human_format(number):
-    units = ['', 'K', 'M', 'G', 'T', 'P']
+    units = ["", "K", "M", "G", "T", "P"]
     k = 1000.0
     magnitude = int(floor(log(number, k))) if number > 0 else int(floor(log(1, k)))
     if magnitude == 0:
         return number
     else:
-        return '%.2f%s' % (number / k ** magnitude, units[magnitude])
+        return "%.2f%s" % (number / k ** magnitude, units[magnitude])
 
 
 def seconds_to_hms(seconds):
@@ -35,14 +36,14 @@ class Profile:
         self.small_font = ImageFont.truetype("arialbd.ttf", 32)
 
     def round_corner(self, radius, fill):
-        corner = Image.new('RGBA', (radius, radius), (0, 0, 0, 0))
+        corner = Image.new("RGBA", (radius, radius), (0, 0, 0, 0))
         draw = ImageDraw.Draw(corner)
         draw.pieslice((0, 0, radius * 2, radius * 2), 180, 270, fill=fill)
         return corner
 
     def round_rectangle(self, size, radius, fill):
         width, height = size
-        rectangle = Image.new('RGBA', size, fill)
+        rectangle = Image.new("RGBA", size, fill)
         corner = self.round_corner(radius, fill)
         rectangle.paste(corner, (0, 0))
         rectangle.paste(corner.rotate(90), (0, height - radius))  # Rotate the corner and paste it
@@ -56,9 +57,15 @@ class Profile:
         w, h = (256, 256)
         profile_bytes = profile_bytes.resize((w, h))
 
-        if bg is not None and bg != "default":
-            bg_img = Image.open(f"backgrounds/{bg}.jpg")
-            im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
+        if bg != "default":
+            bg_img = False
+            for img in Path("backgrounds/").iterdir():
+                if img.name[:-4] == bg:
+                    bg_img = Image.open(f"backgrounds/{img.name}")
+            if bg_img:
+                im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
+            else:
+                im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
         else:
             im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
 
@@ -76,10 +83,6 @@ class Profile:
         im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
 
         # XP progress bar
-        """im_draw.rectangle((350, 190, 750, 250), fill=(64, 64, 64, 255))
-        progress = xp / round((4 * (lvl ** 3) / 5))
-        im_draw.rectangle((350, 190, 350 + int(400 * progress), 250), fill=color)"""
-
         progress = xp / round((4 * (lvl ** 3) / 5))
 
         img = self.round_rectangle((400, 60), 30, (64, 64, 64, 255))

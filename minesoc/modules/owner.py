@@ -164,7 +164,7 @@ class Owner(commands.Cog):
                 else:
                     embed.set_author(name=f"User {u.id}")
             else:
-                g = discord.utils.get(self.bot.guilds, id=target.id)
+                g = discord.utils.get(self.bot.guilds, id=target)
                 if g:
                     embed.set_author(name=f"Guild {g} ({g.id})", icon_url=g.icon_url_as(static_format="png"))
                 else:
@@ -173,6 +173,21 @@ class Owner(commands.Cog):
             await ctx.send(embed=embed)
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
+
+    @blacklist.command(name="all")
+    async def blacklist_show_all(self, ctx):
+        user_list = await self.bot.db.fetch("SELECT * FROM user_blacklist LIMIT 25")
+        guild_list = await self.bot.db.fetch("SELECT * FROM guild_blacklist LIMIT 25")
+
+        embed = discord.Embed(title=f"{self.bot.user.name} Blacklist")
+
+        user_value = "\n".join(str(user["id"]) for user in user_list) if user_list else "None"
+        guild_value = "\n".join(str(guild["id"]) for guild in guild_list) if guild_list else "None"
+
+        embed.add_field(name="Users", value=user_value)
+        embed.add_field(name="Guilds", value=guild_value)
+
+        await ctx.send(embed=embed)
 
 
 def setup(bot):

@@ -33,7 +33,7 @@ class General(commands.Cog):
     async def ping(self, ctx: commands.Context):
         """Pong!"""
         ping = self.bot.latency * 1000
-        await ctx.send(embed=discord.Embed(color=self.bot.colors.neutral, title=f"🛰️ Pong! {ping}ms"))
+        await ctx.send(embed=discord.Embed(color=self.bot.colors.neutral, title=f"🛰️ Pong! {ping:.2f}ms"))
 
     @commands.command(aliases=["minesoc"])
     async def about(self, ctx: commands.Context):

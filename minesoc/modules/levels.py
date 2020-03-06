@@ -129,7 +129,7 @@ class Levels(commands.Cog):
             author_check = [i for i, j in enumerate(users) if j == author]
 
             if author_check:
-                rankings += author_check[0]
+                rankings += str(author_check[0])
                 xp_to_next = round((4 * (author["lvl"] ** 3) / 5))
                 user_info += f"Level {author['lvl']} ({author['xp']})/({xp_to_next})"
                 user_name += ctx.author.name

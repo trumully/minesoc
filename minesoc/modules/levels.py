@@ -98,7 +98,6 @@ class Levels(commands.Cog):
         if bg in owned_bgs:
             await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
                                       bg, member, guild)
-
             embed = discord.Embed()
             embed.title = f"Changed your image to `{bg}`" if bg != "default" else "Reset your profile background."
             await ctx.send(embed=embed)

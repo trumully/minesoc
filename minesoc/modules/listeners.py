@@ -51,7 +51,8 @@ class Listeners(commands.Cog):
             config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
         if not inventory:
-            await self.bot.db.execute("INSERT INTO inventory (user_id, inventory) VALUES ($1, integer[])", author)
+            await self.bot.db.execute("INSERT INTO inventory (user_id, inventory) VALUES ($1, ARRAY[]::integer[])",
+                                      author)
 
         if message.author.bot or ctx.valid:
             return
@@ -90,7 +91,7 @@ class Listeners(commands.Cog):
 
         elif isinstance(error, (commands.BadArgument, commands.BadUnionArgument)):
             await ctx.error(
-                description=f"A parse or conversion error occured with your arguments. Check your input and try "
+                description=f"A parse or conversion error occurred with your arguments. Check your input and try "
                             f"again. If you need help, use `{ctx.prefix}help "
                             f"{ctx.command.qualified_name or ctx.command.name}`")
 

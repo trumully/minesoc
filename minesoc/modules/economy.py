@@ -28,6 +28,7 @@ class Economy(commands.Cog):
         self.bot = bot
         self.credit_gain = Proxy(min=10, max=50)
         self.daily_gain = 200
+        self.items = await self.bot.db.fetch("SELECT * FROM items")
 
         self.bot.loop.create_task(self.economy_table())
 
@@ -111,15 +112,34 @@ class Economy(commands.Cog):
 
         await ctx.send(msg)
 
-    @commands.group()
+    @commands.group(name="shop")
     async def shop(self, ctx):
         if ctx.invoked_subcommand is None:
-            items = [f"[+] {item['name']} - {item['price']}" for item in await self.bot.db.fetch("SELECT * FROM items")]
+            items = [f"[+] {item['name']} - {item['price']}" for item in self.items]
             if not items:
                 return await ctx.send("Shop is empty. Check back later!")
             items_string = "\n".join(items)
             shop = discord.Embed(title="Shop", description=f"```py\n{items_string}```")
             await ctx.send(embed=shop)
+
+    @shop.command(name="buy", aliaes=["purchase"])
+    async def shop_buy(self, ctx, *, item: str):
+        item_to_buy = None
+        for i in self.items:
+            if item.lower() == i["name"]:
+                item_to_buy = i
+
+        author = ctx.author
+        if item_to_buy:
+            user = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", author.id)
+            if (amount := user["amount"] - item_to_buy["price"]) >= 0:
+                await self.bot.db.execute("UPDATE economy SET amount=$1 WHERE user_id=$1", amount, author.id)
+                await self.bot.db.execute("UPDATE inventory SET inventory = inventory || $1 WHERE user_id = $2 AND "
+                                          "($1 == ANY(inventory) IS NOT TRUE)", item_to_buy["id"], author.id)
+                await ctx.success(f"{author.name}, you purchased {item_to_buy['name']} for {item_to_buy['price']} "
+                                  f"credits!")
+        else:
+            await ctx.send(f"**{author.name}** that item does not exist! Make sure you typed the item name correctly.")
 
 
 def setup(bot):

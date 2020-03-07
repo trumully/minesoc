@@ -28,12 +28,14 @@ class Economy(commands.Cog):
         self.bot = bot
         self.credit_gain = Proxy(min=10, max=50)
         self.daily_gain = 200
-        self.items = await self.bot.db.fetch("SELECT * FROM items")
 
         self.bot.loop.create_task(self.economy_table())
 
     def gen_currency(self, proxy):
         return random.randint(proxy.min, proxy.max)
+
+    async def get_items(self):
+        return await self.bot.db.fetch("SELECT * FROM items")
 
     async def economy_table(self):
         await self.bot.wait_until_ready()
@@ -115,7 +117,7 @@ class Economy(commands.Cog):
     @commands.group(name="shop")
     async def shop(self, ctx):
         if ctx.invoked_subcommand is None:
-            items = [f"[+] {item['name']} - {item['price']}" for item in self.items]
+            items = [f"[+] {item['name']} - {item['price']}" for item in await self.get_items()]
             if not items:
                 return await ctx.send("Shop is empty. Check back later!")
             items_string = "\n".join(items)
@@ -125,7 +127,7 @@ class Economy(commands.Cog):
     @shop.command(name="buy", aliaes=["purchase"])
     async def shop_buy(self, ctx, *, item: str):
         item_to_buy = None
-        for i in self.items:
+        for i in await self.get_items():
             if item.lower() == i["name"]:
                 item_to_buy = i
 

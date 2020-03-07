@@ -88,6 +88,8 @@ class Levels(commands.Cog):
 
         if bg not in owned_bgs and bg != "default" or bg is None or bg not in available_bgs:
             owned_bgs = "\n".join(f"[+] {i}" for i in owned_bgs)
+            if not owned_bgs:
+                return await ctx.send(f"**{ctx.author.name}**, you don't own any backgrounds!")
             embed = discord.Embed(title="Available Backgrounds", description=f"```py\n{owned_bgs}```")
             embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
             return await ctx.send(embed=embed)

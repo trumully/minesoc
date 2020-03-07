@@ -29,18 +29,11 @@ class Economy(commands.Cog):
         self.credit_gain = Proxy(min=10, max=50)
         self.daily_gain = 200
 
-        self.bot.loop.create_task(self.economy_table())
-
-    def gen_currency(self, proxy):
-        return random.randint(proxy.min, proxy.max)
+    def gen_currency(self):
+        return random.randint(self.credit_gain.min, self.credit_gain.max)
 
     async def get_items(self):
         return await self.bot.db.fetch("SELECT * FROM items")
-
-    async def economy_table(self):
-        await self.bot.wait_until_ready()
-
-        await self.bot.db.execute("CREATE TABLE IF NOT EXISTS economy(user_id BIGINT, amount BIGINT, cd REAL, streak BIGINT, streak_time REAL, streak_cd REAL)")
 
     async def user_check(self, user_id):
         return await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM economy WHERE user_id=$1)", user_id)
@@ -55,16 +48,16 @@ class Economy(commands.Cog):
 
         check = await self.user_check(author)
 
-        gain = self.gen_currency(self.credit_gain)
+        gain = self.gen_currency()
 
         if check[0]:
-            result = await self.bot.db.fetchrow("SELECT amount, cd FROM economy WHERE user_id=$1", author)
+            result = await self.bot.db.fetchrow("SELECT * FROM economy WHERE user_id=$1", author)
             if time.time() - result["cd"] >= COOLDOWN:
                 await self.bot.db.execute("UPDATE economy SET amount=$1, cd=$2 WHERE user_id=$3",
                                           result["amount"] + gain, time.time(), author)
         else:
             await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time, streak_cd) "
-                                      "VALUES ($1, $2, $3, 0, 0)", author, gain, time.time())
+                                      "VALUES ($1, $2, $3, 0, 0, 0)", author, gain, time.time())
 
     @commands.command()
     async def balance(self, ctx):
@@ -94,7 +87,7 @@ class Economy(commands.Cog):
                 msg = f"💸 | **{ctx.author.name}**, you got ${self.daily_gain} credits!\n\n**Streak: {streak}**"
 
                 if streak % 5 == 0 and streak > 0:
-                    streak_bonus = self.gen_currency(self.credit_gain) * 2
+                    streak_bonus = self.gen_currency() * 2
                     net_gain = self.daily_gain + streak_bonus
                     msg += f"\n\n**You completed a streak and earned an extra ${streak_bonus} credits " \
                            f"({net_gain} total)!**"

@@ -8,6 +8,15 @@ CREATE TABLE IF NOT EXISTS guild_blacklist(
     reason TEXT
 );
 
+CREATE TABLE IF NOT EXISTS economy(
+    user_id BIGINT,
+    amount BIGINT,
+    cd REAL,
+    streak BIGINT,
+    streak_time REAL,
+    streak_cd REAL
+);
+
 CREATE TABLE IF NOT EXISTS items(
     id SERIAL UNIQUE,
     name TEXT,

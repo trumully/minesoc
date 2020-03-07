@@ -193,14 +193,20 @@ class Owner(commands.Cog):
 
     @commands.command()
     async def add_item(self, ctx, item_price: int, item_type, *, item_name: str = None):
-        result = await self.bot.db.execute("INSERT INTO shop (name, price, type) VALUES ($1, $2, $3)",
-                                           item_name, item_price, item_type)
-        await ctx.send(result)
+        try:
+            result = await self.bot.db.execute("INSERT INTO item (name, price, type) VALUES ($1, $2, $3)",
+                                               item_name, item_price, item_type)
+            await ctx.send(result)
+        except Exception as ex:
+            await ctx.error(description=ex)
 
     @commands.command()
     async def remove_item(self, ctx, item_id):
-        result = await self.bot.db.execute("DELETE FROM shop WHERE id=$1", item_id)
-        await ctx.send(result)
+        try:
+            result = await self.bot.db.execute("DELETE FROM item WHERE id=$1", item_id)
+            await ctx.send(result)
+        except Exception as ex:
+            await ctx.error(description=ex)
 
 
 def setup(bot):

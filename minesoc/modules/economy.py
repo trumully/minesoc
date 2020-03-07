@@ -116,10 +116,10 @@ class Economy(commands.Cog):
         if ctx.invoked_subcommand is None:
             items = [f"[+] {item['name']} - {item['price']}" for item in await self.bot.db.fetch("SELECT * FROM items")]
             if not items:
-                await ctx.send("Shop is empty. Check back later!")
+                return await ctx.send("Shop is empty. Check back later!")
             items_string = "\n".join(items)
             shop = discord.Embed(title="Shop", description=f"```py\n{items_string}```")
-            await ctx.send(shop)
+            await ctx.send(embed=shop)
 
 
 def setup(bot):

@@ -39,21 +39,27 @@ class Listeners(commands.Cog):
     async def on_message(self, message):
         ctx = await self.bot.get_context(message)
 
-        if message.author.bot or ctx.valid:
-            return
-
         guild = int(message.guild.id)
-        config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
+        author = int(message.author.id)
+
+        config = await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM persistence WHERE guild=$1)", guild)
+
+        inventory = await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM inventory WHERE user_id=$1)", author)
 
         if not config:
             await self.bot.db.execute("INSERT INTO persistence (guild, lvl_msg, lvls) VALUES ($1, TRUE, TRUE)", guild)
             config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
+        if not inventory:
+            await self.bot.db.execute("INSERT INTO inventory (user_id, inventory) VALUES ($1, ARRAY[])", author)
+
+        if message.author.bot or ctx.valid:
+            return
+
         do_lvl = config["lvls"]
         do_msg = config["lvl_msg"]
 
         if do_lvl:
-            author = int(message.author.id)
 
             xp = self.bot.xp_gain()
 

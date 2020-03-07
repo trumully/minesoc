@@ -51,7 +51,7 @@ class Listeners(commands.Cog):
             config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
         if not inventory:
-            await self.bot.db.execute("INSERT INTO inventory (user_id, inventory) VALUES ($1, ARRAY[])", author)
+            await self.bot.db.execute("INSERT INTO inventory (user_id, inventory) VALUES ($1, integer[])", author)
 
         if message.author.bot or ctx.valid:
             return

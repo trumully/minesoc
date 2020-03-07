@@ -2,6 +2,7 @@
 # Money! Money! Money!
 import time
 import random
+import discord
 
 from discord.ext import commands
 from libneko.aggregates import Proxy
@@ -109,6 +110,16 @@ class Economy(commands.Cog):
             msg = f"💸 | **{ctx.author.name}**, you got ${self.daily_gain} credits!\n\n**Streak: 1**"
 
         await ctx.send(msg)
+
+    @commands.group()
+    async def shop(self, ctx):
+        if ctx.invoked_subcommand is None:
+            items = [f"[+] {item['name']} - {item['price']}" for item in await self.bot.db.fetch("SELECT * FROM items")]
+            if not items:
+                await ctx.send("Shop is empty. Check back later!")
+            items_string = "\n".join(items)
+            shop = discord.Embed(title="Shop", description=f"```py\n{items_string}```")
+            await ctx.send(shop)
 
 
 def setup(bot):

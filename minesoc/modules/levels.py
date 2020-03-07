@@ -87,19 +87,23 @@ class Levels(commands.Cog):
                     owned_bgs.append(j["name"])
 
         if bg not in owned_bgs and bg != "default" or bg is None or bg not in available_bgs:
-            embed = discord.Embed(title="Available Backgrounds")
+            owned_bgs = "\n".join(f"[+] {i}" for i in owned_bgs)
+            embed = discord.Embed(title="Available Backgrounds", description=f"```py\n{owned_bgs}```")
             embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
             return await ctx.send(embed=embed)
 
         member = ctx.author.id
         guild = ctx.guild.id
 
-        await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
-                                  bg, member, guild)
+        if bg in owned_bgs:
+            await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
+                                      bg, member, guild)
 
-        embed = discord.Embed()
-        embed.title = f"Changed your image to `{bg}`" if bg != "default" else "Reset your profile background."
-        await ctx.send(embed=embed)
+            embed = discord.Embed()
+            embed.title = f"Changed your image to `{bg}`" if bg != "default" else "Reset your profile background."
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("You do not own that background!")
 
     @commands.command(pass_context=True, aliases=["lb", "ranks", "levels"])
     async def leaderboard(self, ctx):

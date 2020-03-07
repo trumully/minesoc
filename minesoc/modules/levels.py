@@ -72,21 +72,33 @@ class Levels(commands.Cog):
         await ctx.send(embed=embed)
 
     @profile.command(pass_context=True, name="background", aliases=["bg"])
-    async def profile_background(self, ctx, image: str = None):
+    async def profile_background(self, ctx, bg: str = None):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
-        available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir()]
+        available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir() if file.name[:-4]]
 
-        if image not in available_bgs and image != "default" or image is None:
-            return await ctx.send(f"List of available backgrounds:\n```{', '.join(available_bgs)}```")
+        user = await self.bot.db.fetchrow("SELECT * FROM inventory WHERE user_id=$1", ctx.author.id)
+        bgs = await self.bot.db.fetch("SELECT * FROM items WHERE type=0")
+
+        owned_bgs = []
+        inventory = user["inventory"]
+        for i in inventory:
+            for j in bgs:
+                if i == j["id"]:
+                    owned_bgs.append(j["name"])
+
+        if bg not in owned_bgs and bg != "default" or bg is None or bg not in available_bgs:
+            embed = discord.Embed(title="Available Backgrounds")
+            embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+            return await ctx.send(embed=embed)
 
         member = ctx.author.id
         guild = ctx.guild.id
 
         await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
-                                  image, member, guild)
+                                  bg, member, guild)
 
         embed = discord.Embed()
-        embed.title = f"Changed your image to `{image}`" if image != "default" else "Reset your profile background."
+        embed.title = f"Changed your image to `{bg}`" if bg != "default" else "Reset your profile background."
         await ctx.send(embed=embed)
 
     @commands.command(pass_context=True, aliases=["lb", "ranks", "levels"])

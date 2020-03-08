@@ -26,5 +26,5 @@ CREATE TABLE IF NOT EXISTS items(
 
 CREATE TABLE IF NOT EXISTS inventory(
     user_id BIGINT,
-    inventory INT[]
+    items INTEGER[]
 );

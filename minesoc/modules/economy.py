@@ -114,8 +114,7 @@ class Economy(commands.Cog):
             if not items:
                 return await ctx.send("Shop is empty. Check back later!")
             items_string = "\n".join(items)
-            shop = discord.Embed(title="Shop")
-            shop.add_field(name="\u200b", value=f"```py\n{items_string}```")
+            shop = discord.Embed(title="Shop", description=f"```py\n{items_string}```")
             await ctx.send(embed=shop)
 
     @shop.command(name="buy", aliaes=["purchase"])
@@ -148,9 +147,9 @@ class Economy(commands.Cog):
         else:
             items = [i for i in await self.get_items() if i["id"] in user_inventory["items"]]
             user_inventory = "\n".join([f"[+] {i['name'].title()}" for i in items])
-            embed = discord.Embed(description=f"```{user_inventory}```")
+            embed = discord.Embed(description=f"```{user_inventory}```", color=ctx.author.color)
             embed.set_author(name=f"{ctx.author.name}'s inventory", icon_url=ctx.author.avatar_url)
-            await ctx.send(embed=embed, color=ctx.author.color)
+            await ctx.send(embed=embed)
 
 
 def setup(bot):

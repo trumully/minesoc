@@ -80,7 +80,7 @@ class Levels(commands.Cog):
         bgs = await self.bot.db.fetch("SELECT * FROM items WHERE type=0")
 
         owned_bgs = []
-        inventory = user["inventory"]
+        inventory = user["items"]
         for i in inventory:
             for j in bgs:
                 if i == j["id"]:

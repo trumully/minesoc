@@ -110,11 +110,12 @@ class Economy(commands.Cog):
     @commands.group(name="shop")
     async def shop(self, ctx):
         if ctx.invoked_subcommand is None:
-            items = [f"[+] {item['name']} - {item['price']}" for item in await self.get_items()]
+            items = [f"[+] {item['name'].title()} - ${item['price']}" for item in await self.get_items()]
             if not items:
                 return await ctx.send("Shop is empty. Check back later!")
             items_string = "\n".join(items)
-            shop = discord.Embed(title="Shop", description=f"```py\n{items_string}```")
+            shop = discord.Embed(title="Shop")
+            shop.add_field(name="\u200b", value=f"```py\n{items_string}```")
             await ctx.send(embed=shop)
 
     @shop.command(name="buy", aliaes=["purchase"])
@@ -129,12 +130,27 @@ class Economy(commands.Cog):
             user = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", author.id)
             if (amount := user["amount"] - item_to_buy["price"]) >= 0:
                 await self.bot.db.execute("UPDATE economy SET amount=$1 WHERE user_id=$2", amount, author.id)
-                await self.bot.db.execute("UPDATE inventory SET items = items || ARRAY[$1]::int[] WHERE user_id = $2",
+
+                await self.bot.db.execute("UPDATE inventory SET items = items || ARRAY[$1]::int[] WHERE user_id = $2 "
+                                          "AND NOT EXISTS (SELECT * FROM inventory WHERE $1 = ANY (items))",
                                           item_to_buy["id"], author.id)
                 await ctx.success(f"{author.name}, you purchased {item_to_buy['name']} for {item_to_buy['price']} "
                                   f"credits!")
         else:
             await ctx.send(f"**{author.name}** that item does not exist! Make sure you typed the item name correctly.")
+
+    @commands.command()
+    async def inventory(self, ctx):
+        try:
+            user_inventory = await self.bot.db.fetchrow("SELECT * FROM inventory WHERE user_id=$1", ctx.author.id)
+        except Exception:
+            await ctx.send(f"**{ctx.author.name}**, your inventory is empty.")
+        else:
+            items = [i for i in await self.get_items() if i["id"] in user_inventory["items"]]
+            user_inventory = "\n".join([f"[+] {i['name'].title()}" for i in items])
+            embed = discord.Embed(description=f"```{user_inventory}```")
+            embed.set_author(name=f"{ctx.author.name}'s inventory", icon_url=ctx.author.avatar_url)
+            await ctx.send(embed=embed, color=ctx.author.color)
 
 
 def setup(bot):

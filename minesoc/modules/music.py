@@ -138,7 +138,7 @@ class Music(commands.Cog):
                     self.task = self.bot.loop.create_task(self.queue_spotify(tracks, player, ctx.author.id))
 
             else:
-                if not re.match(url_rx, query) or not query.startswith("ytsearch:"):
+                if not re.match(url_rx, query) and not query.startswith("ytsearch:"):
                     query = f"ytsearch:{query}"
 
                 results = await player.node.get_tracks(query)

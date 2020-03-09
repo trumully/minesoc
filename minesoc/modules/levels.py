@@ -30,6 +30,15 @@ class Levels(commands.Cog):
 
         await self.bot.db.execute(query)
 
+    async def cog_before_invoke(self, ctx):
+        persistence = await self.bot.db.fetchrow("SELECT lvls FROM persistence WHERE guild_id=$1", ctx.guild.id)
+        if not persistence["lvls"]:
+            raise commands.DisabledCommand
+
+    async def cog_command_error(self, ctx, error):
+        if isinstance(error, commands.DisabledCommand):
+            await ctx.error(description="The level system has been disabled for this guild.")
+
     @commands.group(invoke_without_command=True)
     @commands.bot_has_permissions(attach_files=True)
     async def profile(self, ctx, member: discord.Member = None):
@@ -66,25 +75,22 @@ class Levels(commands.Cog):
         member = ctx.author.id
         guild = ctx.guild.id
         async with ctx.typing():
-            await self.bot.db.execute("UPDATE levels SET color = $1 WHERE user_id = $2 AND guild_id = $3",
-                                      color.value, member, guild)
+            await self.bot.db.execute("UPDATE levels SET color=$1 WHERE user_id=$2 AND guild_id=$3", color.value,
+                                      member, guild)
         embed = discord.Embed(color=color, title=f"Changed your color to `{color}`")
         await ctx.send(embed=embed)
 
     @profile.command(pass_context=True, name="background", aliases=["bg"])
     async def profile_background(self, ctx, bg: str = None):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
+        bg = bg.lower()
         available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir() if file.name[:-4]]
 
         user = await self.bot.db.fetchrow("SELECT * FROM inventory WHERE user_id=$1", ctx.author.id)
         bgs = await self.bot.db.fetch("SELECT * FROM items WHERE type=0")
 
-        owned_bgs = []
         inventory = user["items"]
-        for i in inventory:
-            for j in bgs:
-                if i == j["id"]:
-                    owned_bgs.append(j["name"])
+        owned_bgs = [j["name"] for i in inventory for j in bgs if i == j["id"]]
 
         if bg not in owned_bgs and bg != "default" or bg is None or bg not in available_bgs:
             owned_bgs = "\n".join(f"[+] {i.title()}" for i in owned_bgs)
@@ -110,50 +116,41 @@ class Levels(commands.Cog):
     async def leaderboard(self, ctx):
         """Shows the top 10 users of your guild."""
         guild_check = ctx.guild is not None
+
         if guild_check:
             guild = ctx.guild.id
 
-            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id = $1 ORDER BY xp DESC", guild)
+            users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id=$1 ORDER BY xp DESC LIMIT 10", guild)
 
-            user_info = ""
-            user_name = ""
-            rankings = ""
+            ranks = {(y := x + 1): f"#{y}" if y > 3 else f"{self.leaderboard_emojis[x]}" for x in range(10)}
+
+            fields = {"member": [], "level": [], "rank": []}
             for index, value in zip(range(10), users):
                 user = self.bot.get_user(value["user_id"])
-                if user:
-                    rank = index + 1
-                    if rank <= 3:
-                        if rank == 1:
-                            top_user = f"Top Member: 🏆 **{str(user)}**"
-                        rank = f"{self.leaderboard_emojis[rank]}\n"
-                    else:
-                        rank = f"#{rank}\n"
-                    rankings += rank
-                    xp_to_next = round((4 * (value["lvl"] ** 3) / 5))
-                    user_info += f"Level {value['lvl']} ({value['xp']}/{xp_to_next})\n"
-                    user_name += f"**{user.name}**\n"
+
+                if (rank := index + 1) == 1:
+                    top_user = f"Top Member: 🏆 **{str(user)}**"
+
+                fields["rank"].append(ranks[rank])
+                fields["member"].append(f"**{user.name}**")
+                fields["level"].append(f"Level {value['lvl']} ({value['xp']}/{round((4 * (value['lvl'] ** 3) / 5))})")
             else:
-                rankings += "...\n"
-                user_info += "...\n"
-                user_name += "...\n"
+                for value in fields.values():
+                    value.append("...")
 
             embed = discord.Embed(color=ctx.me.colour, title=f"Top 10 in {ctx.guild.name}", description=top_user,
                                   timestamp=ctx.message.created_at)
 
-            author = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id = $1 AND guild_id = $2",
+            author = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2",
                                                 ctx.author.id, guild)
 
-            author_check = [i + 1 for i, j in enumerate(users) if j == author]
+            if author in users:
+                fields["rank"] += ranks[users.index(author) + 1]
+                fields["member"] += f"**{ctx.author.name}**"
+                fields["level"] += f"Level {author['lvl']} ({author['xp']}/{round((4 * (author['lvl'] ** 3) / 5))})"
 
-            if author_check:
-                rankings += f"#{author_check[0]}"
-                xp_to_next = round((4 * (author["lvl"] ** 3) / 5))
-                user_info += f"Level {author['lvl']} ({author['xp']}/{xp_to_next})"
-                user_name += f"**{ctx.author.name}**"
-
-            embed.add_field(name="Rank", value=rankings, inline=True)
-            embed.add_field(name="Member", value=user_name, inline=True)
-            embed.add_field(name="Level", value=user_info, inline=True)
+            for key in fields.keys():
+                embed.add_field(name=key.title(), value="\n".join(fields[key]), inline=True)
 
             await ctx.send(embed=embed)
 

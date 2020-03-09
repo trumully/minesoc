@@ -117,7 +117,7 @@ class Owner(commands.Cog):
             else:
                 await self.add_blacklist(int(target), table, reason)
 
-            await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
+            await ctx.message.add_reaction(self.bot.custom_emojis.tick)
             if not isinstance(target, discord.User):
                 embed = discord.Embed(color=self.bot.colors.red,
                                       description=f"Your guild / server has been blacklisted. "
@@ -145,7 +145,7 @@ class Owner(commands.Cog):
 
         if check[0]:
             await self.remove_blacklist(target, table)
-            await ctx.message.add_reaction(self.bot.custom_emojis.green_tick)
+            await ctx.message.add_reaction(self.bot.custom_emojis.tick)
         else:
             await ctx.error(description=f"{table.split('_')[0].title()} is not blacklisted.")
 

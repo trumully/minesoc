@@ -136,7 +136,7 @@ class Fun(commands.Cog):
         thing_2 = thing_2.name if isinstance(thing_2, discord.User) else thing_2
 
         responses = ["Bad 😢", "Meh 😐", "Good 🙂", "Pretty Good 😃", "Wow 😍", "PERFECT ❣️"]
-        message = f"💗**MATCHMAKING**💗\n🔻 `{thing_1}`\n🔺 `{thing_2}`"
+        message = f"💗 **MATCHMAKING** 💗\n🔻 `{thing_1}`\n🔺 `{thing_2}`"
         embed = discord.Embed(color=discord.Color(0xFF1493))
 
         progress = ["█" for _ in range(round(match, -1) // 10)]

@@ -23,7 +23,7 @@ class MinesocContext(commands.Context):
 
     async def success(self, description: str):
         embed = discord.Embed(color=discord.Color.green(),
-                              description=f"{self.bot.custom_emojis.green_tick} {description}")
+                              description=f"{self.bot.custom_emojis.tick} {description}")
         embed.set_footer(text=f"Command executed by: {self.author}",
                          icon_url=self.author.avatar_url_as(static_format="png"))
         return await self.send(embed=embed)
@@ -61,9 +61,9 @@ class MinesocContext(commands.Context):
             return response.content
 
     async def confirm(self, message: discord.Message, timeout=30):
-        REACTIONS = [self.bot.custom_emojis.green_tick, self.bot.custom_emojis.red_tick]
+        reactions = [self.bot.custom_emojis.tick, self.bot.custom_emojis.cross]
 
-        for r in REACTIONS:
+        for r in reactions:
             await message.add_reaction(r)
 
         def _check(reaction: discord.Reaction, user: discord.User):
@@ -77,10 +77,10 @@ class MinesocContext(commands.Context):
         else:
             reaction = str(reaction)
 
-            if reaction == self.bot.custom_emojis.green_tick:
+            if reaction == self.bot.custom_emojis.tick:
                 await message.delete()
                 return True
-            elif reaction == self.bot.custom_emojis.red_tick:
+            elif reaction == self.bot.custom_emojis.cross:
                 await message.delete()
                 await self.error(description="Action declined.")
                 return False

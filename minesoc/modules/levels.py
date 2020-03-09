@@ -146,12 +146,14 @@ class Levels(commands.Cog):
                                                 ctx.author.id, guild)
 
             if author in users:
-                fields["rank"] += ranks[users.index(author) + 1]
-                fields["member"] += f"**{ctx.author.name}**"
-                fields["level"] += f"Level {author['lvl']} ({author['xp']}/{round((4 * (author['lvl'] ** 3) / 5))})"
+                fields["rank"].append(ranks[users.index(author) + 1])
+                fields["member"].append(f"**{ctx.author.name}**")
+                xp = round((4 * (author['lvl'] ** 3) / 5))
+                fields["level"].append(f"Level {author['lvl']} ({author['xp']}/{xp})")
 
-            for key in fields.keys():
-                embed.add_field(name=key.title(), value="\n".join(fields[key]), inline=True)
+            embed.add_field(name="Rank", value="\n".join(fields["rank"]), inline=True)
+            embed.add_field(name="Member", value="\n".join(fields["member"]), inline=True)
+            embed.add_field(name="Level", value="\n".join(fields["level"]), inline=True)
 
             await ctx.send(embed=embed)
 

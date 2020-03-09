@@ -83,6 +83,7 @@ class Fun(commands.Cog):
     @commands.command()
     @commands.cooldown(1, 30, commands.BucketType.user)
     async def trivia(self, ctx):
+        """Do some trivia."""
         result = await self.bot.api.trivia.get_trivia()
 
         if isinstance(result.embed, discord.Embed):
@@ -126,6 +127,36 @@ class Fun(commands.Cog):
         else:
             await ctx.error(f"Command failed! If you would like assistance, let the bot owner know: "
                             f"RESPONSE_CODE {result}")
+
+    @commands.command()
+    async def ship(self, ctx, thing_1, thing_2):
+        match = randint(1, 100)
+        thing_1 = thing_1.name or thing_1
+        thing_2 = thing_1.name or thing_2
+
+        responses = ["Bad 😢", "Meh 😐", "Good 🙂", "Pretty Good 😃", "Wow 😍", "PERFECT ❣️"]
+        message = f"💗**MATCHMAKING**💗\n🔻 `{thing_1}`\n🔺 `{thing_2}`"
+        embed = discord.Embed(color=discord.Color(0xFF1493))
+
+        progress = ["█" for _ in range(round(match, -1) / 10)]
+        if len(progress) < 10:
+            for i in range(10 - len(progress)):
+                progress.append(" ​")
+        response = f"**{match}%** `{progress}` "
+        if match < 20:
+            response += responses[0]
+        elif 40 > match >= 20:
+            response += responses[1]
+        elif 60 > match >= 40:
+            response += responses[2]
+        elif 80 > match >= 60:
+            response += responses[3]
+        elif 99 > match >= 80:
+            response += responses[4]
+        else:
+            response += responses[5]
+
+        await ctx.send(message, embed=embed)
 
 
 def setup(bot):

@@ -55,14 +55,6 @@ class Music(commands.Cog):
 
         return guild_check
 
-    async def cog_command_error(self, ctx, error):
-        if isinstance(error, commands.CommandInvokeError):
-            await ctx.send(error)
-            # The above handles errors thrown in this cog and shows them to the user.
-            # This shouldn't be a problem as the only errors thrown in this cog are from `ensure_voice`
-            # which contain a reason string, such as "Join a voice channel" etc. You can modify the above
-            # if you want to do things differently.
-
     async def track_hook(self, event):
         if isinstance(event, lavalink.events.QueueEndEvent):
             guild_id = int(event.player.guild_id)
@@ -324,7 +316,7 @@ class Music(commands.Cog):
         tracks = results["tracks"][:10]  # First 10 results
 
         o = ""
-        for index, track in enumerate(tracks, start=1):
+        for index, track in zip(range(len(tracks)), tracks):
             track_title = track["info"]["title"]
             track_uri = track["info"]["uri"]
             o += f"`{index}.` [{track_title}]({track_uri})\n"
@@ -352,7 +344,7 @@ class Music(commands.Cog):
         await self.connect_to(ctx.guild.id, None)
         await ctx.send("*⃣ | Disconnected.")
 
-    @commands.command()
+    @commands.command(aliases=["join", "connect"])
     async def summon(self, ctx):
         await self.connect_to(ctx.guild.id, str(ctx.author.voice.channel.id))
 

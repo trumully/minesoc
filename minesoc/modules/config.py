@@ -144,82 +144,37 @@ class Config(commands.Cog):
         do_msg = config["lvl_msg"]
         do_lvl = config["lvls"]
 
-        options = ["Edit persistence settings", "Edit level-up message settings"]
-        options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-        responses = ["1", "2", "exit"]
-        embed = discord.Embed(title=f"{ctx.guild.name} Persistence Settings",
-                              description=f"```py\n"
-                                          f"Users gain {self.bot.xp_values.min}-{self.bot.xp_values.max} XP per message"
-                                          f"\nXP gain on this server is {'Enabled' if do_lvl else 'Disabled'}\n"
-                                          f"Level-Up messages on this server are {'Enabled' if do_msg else 'Disabled'}"
-                                          f"\n\n{''.join(options)}\n"
-                                          f"Type the appropriate number to access the menu.\n"
-                                          f"Type 'exit' to leave the menu```")
+        check = {True: "Enabled", False: "Disabled"}
+        title = f"{ctx.guild.name} Persistence Settings"
+        options = {"1": "Edit persistence settings", "2": "Edit level-up message settings"}
+        extras = f"Users gain {self.bot.xp_values.min}-{self.bot.xp_values.max} XP per message\n"\
+                 f"XP gain on this server is {check[do_lvl]}\nLevel-Up messages on this server are {check[do_msg]}"
 
-        menu = await ctx.send(embed=embed)
+        menu = await ctx.menu(title=title, options=options, extras=extras)
 
-        def check(author):
-            def inner_check(message):
-                if message.author != author:
-                    return False
-                if message.content in responses:
-                    return True
-                else:
-                    return False
-
-            return inner_check
-
-        try:
-            message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
-        except asyncio.TimeoutError:
-            await menu.delete()
-            await ctx.error(description="Action cancelled! You took too long.")
-        else:
-            await menu.delete()
-            await message.add_reaction(self.bot.custom_emojis.green_tick)
-            if message.content == responses[0]:
-                options = ["Enable level system", "Disable level system"]
-                options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-                desc = f"```py\n" \
-                       f"{''.join(options)}```\nType the appropriate number to access the menu.\n" \
-                       f"Type 'exit' to leave the menu"
-                embed = discord.Embed(title=f"Edit Persistence Settings", description=desc)
-                menu = await ctx.send(embed=embed)
-                try:
-                    message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
-                except asyncio.TimeoutError:
-                    await menu.delete()
-                    await ctx.error(description="Action cancelled! You took too long.")
-                else:
-                    await message.add_reaction(self.bot.custom_emojis.green_tick)
-
-                    if message.content == responses[0]:
+        if menu:
+            if menu == "1":
+                options = {"1": "Enable level system", "2": "Disable level system"}
+                title = "Edit Persistence Settings"
+            else:
+                options = {"1": "Enable level-up messages", "2": "Disable level-up messages"}
+                title = "Edit Level-Up message Settings"
+            sub_menu = await ctx.menu(title=title, options=options)
+            if sub_menu:
+                if title == "Edit Persistence Settings":
+                    if sub_menu == "1":
                         await self.bot.db.execute("UPDATE persistence SET lvls=TRUE WHERE guild=$1", guild)
-                    elif message.content == responses[1]:
+                        await ctx.success(f"**{ctx.author.name}**, you enabled the level system.")
+                    else:
                         await self.bot.db.execute("UPDATE persistence SET lvls=FALSE WHERE guild=$1", guild)
-
-                    await menu.delete()
-
-            elif message.content == responses[1]:
-                options = ["Enable level-up messages", "Disable level-up messages"]
-                options = [f"[{idx + 1}] {val}\n" for idx, val in enumerate(options)]
-                embed = discord.Embed(title=f"Edit Level-Up message Settings",
-                                      description=f"```py\n{''.join(options)}```\nType the appropriate number to "
-                                                  f"access the menu.\nType 'exit' to leave the menu")
-                menu = await ctx.send(embed=embed)
-                try:
-                    message = await self.bot.wait_for("message", check=check(ctx.author), timeout=30)
-                except asyncio.TimeoutError:
-                    await menu.delete()
-                    await ctx.error(description="Action cancelled! You took too long.")
+                        await ctx.success(f"**{ctx.author.name}**, you disabled the level system.")
                 else:
-                    await message.add_reaction(self.bot.custom_emojis.green_tick)
-                    if message.content == responses[0]:
+                    if sub_menu == "1":
                         await self.bot.db.execute("UPDATE persistence SET lvl_msg=TRUE WHERE guild=$1", guild)
-                    elif message.content == responses[1]:
+                        await ctx.success(f"**{ctx.author.name}**, you enabled level-up messages.")
+                    else:
                         await self.bot.db.execute("UPDATE persistence SET lvl_msg=FALSE WHERE guild=$1", guild)
-
-                    await menu.delete()
+                        await ctx.success(f"**{ctx.author.name}**, you disabled level-up messages.")
 
     async def cog_command_error(self, ctx: commands.Context, error: commands.CommandError):
         if isinstance(error, PrefixTooLong):

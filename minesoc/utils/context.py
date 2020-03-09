@@ -35,6 +35,31 @@ class MinesocContext(commands.Context):
         options = {True: self.bot.custom_emojis.on, False: self.bot.custom_emojis.off}
         return options[boolean]
 
+    async def menu(self, title, options: dict, timeout=30, extras=""):
+        embed = discord.Embed(title=title, color=self.bot.colors.neutral)
+        embed.description = f"```py\n{extras}\n\n" + \
+                            "\n".join([f"[{key}] {value}" for key, value in options.items()]) + \
+                            "\nType the appropriate number to access the menu.\nType 'exit' to leave the menu```"
+
+        menu = await self.send(embed=embed)
+
+        def _check(user):
+            def _inner_check(message):
+                return user.id == self.author.id and message.content in options.keys() or message.content == "exit"
+            return _inner_check
+
+        try:
+            response = await self.bot.wait_for("message", timeout=timeout, check=_check)
+        except asyncio.TimeoutError:
+            await menu.delete()
+            await self.error(description="Menu timed out, you took too long!")
+            return False
+        else:
+            await menu.delete()
+            if response.content == "exit":
+                return False
+            return response.content
+
     async def confirm(self, message: discord.Message, timeout=30):
         REACTIONS = [self.bot.custom_emojis.green_tick, self.bot.custom_emojis.red_tick]
 

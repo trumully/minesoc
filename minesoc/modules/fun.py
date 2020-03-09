@@ -132,6 +132,9 @@ class Fun(commands.Cog):
     async def ship(self, ctx, thing_1, thing_2):
         match = randint(1, 100)
 
+        thing_1 = thing_1.name if isinstance(thing_1, discord.User) else thing_1
+        thing_2 = thing_2.name if isinstance(thing_2, discord.User) else thing_2
+
         responses = ["Bad 😢", "Meh 😐", "Good 🙂", "Pretty Good 😃", "Wow 😍", "PERFECT ❣️"]
         message = f"💗**MATCHMAKING**💗\n🔻 `{thing_1}`\n🔺 `{thing_2}`"
         embed = discord.Embed(color=discord.Color(0xFF1493))

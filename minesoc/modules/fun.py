@@ -131,8 +131,8 @@ class Fun(commands.Cog):
     @commands.command()
     async def ship(self, ctx, thing_1, thing_2):
         match = randint(1, 100)
-        thing_1 = thing_1.name if isinstance(thing_1, discord.Member) else thing_1
-        thing_2 = thing_2.name if isinstance(thing_2, discord.Member) else thing_2
+        thing_1 = thing_1.display_name if isinstance(thing_1, discord.Member) else thing_1
+        thing_2 = thing_2.display_name if isinstance(thing_2, discord.Member) else thing_2
 
         responses = ["Bad 😢", "Meh 😐", "Good 🙂", "Pretty Good 😃", "Wow 😍", "PERFECT ❣️"]
         message = f"💗**MATCHMAKING**💗\n🔻 `{thing_1}`\n🔺 `{thing_2}`"
@@ -155,6 +155,8 @@ class Fun(commands.Cog):
             response += responses[4]
         else:
             response += responses[5]
+
+        embed.description = response
 
         await ctx.send(message, embed=embed)
 

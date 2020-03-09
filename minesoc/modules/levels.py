@@ -83,16 +83,16 @@ class Levels(commands.Cog):
     @profile.command(pass_context=True, name="background", aliases=["bg"])
     async def profile_background(self, ctx, bg: str = None):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
-        bg = bg.lower()
-        available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir() if file.name[:-4]]
+        bg = bg.lower() if bg is not None else bg
 
         user = await self.bot.db.fetchrow("SELECT * FROM inventory WHERE user_id=$1", ctx.author.id)
         bgs = await self.bot.db.fetch("SELECT * FROM items WHERE type=0")
 
         inventory = user["items"]
         owned_bgs = [j["name"] for i in inventory for j in bgs if i == j["id"]]
+        available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir() if file.name[:-4]]
 
-        if bg not in owned_bgs and bg != "default" or bg is None or bg not in available_bgs:
+        if bg is None or bg not in available_bgs and bg not in owned_bgs and bg != "default":
             owned_bgs = "\n".join(f"[+] {i.title()}" for i in owned_bgs)
             if not owned_bgs:
                 return await ctx.send(f"**{ctx.author.name}**, you don't own any backgrounds!")
@@ -131,9 +131,10 @@ class Levels(commands.Cog):
                 if (rank := index + 1) == 1:
                     top_user = f"Top Member: 🏆 **{str(user)}**"
 
-                fields["rank"].append(ranks[rank])
-                fields["member"].append(f"**{user.name}**")
-                fields["level"].append(f"Level {value['lvl']} ({value['xp']}/{round((4 * (value['lvl'] ** 3) / 5))})")
+                if user:
+                    fields["rank"].append(ranks[rank])
+                    fields["member"].append(f"**{user.name}**")
+                    fields["level"].append(f"Level {value['lvl']} ({value['xp']}/{round((4 * (value['lvl'] ** 3) / 5))})")
             else:
                 for value in fields.values():
                     value.append("...")

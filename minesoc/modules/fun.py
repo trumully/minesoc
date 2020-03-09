@@ -138,7 +138,7 @@ class Fun(commands.Cog):
         message = f"💗**MATCHMAKING**💗\n🔻 `{thing_1}`\n🔺 `{thing_2}`"
         embed = discord.Embed(color=discord.Color(0xFF1493))
 
-        progress = ["█" for _ in range(round(match, -1) / 10)]
+        progress = ["█" for _ in range(round(match, -1) // 10)]
         if len(progress) < 10:
             for i in range(10 - len(progress)):
                 progress.append(" ​")

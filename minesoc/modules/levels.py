@@ -31,7 +31,7 @@ class Levels(commands.Cog):
         await self.bot.db.execute(query)
 
     async def cog_before_invoke(self, ctx):
-        persistence = await self.bot.db.fetchrow("SELECT lvls FROM persistence WHERE guild_id=$1", ctx.guild.id)
+        persistence = await self.bot.db.fetchrow("SELECT lvls FROM persistence WHERE guild=$1", ctx.guild.id)
         if not persistence["lvls"]:
             raise commands.DisabledCommand
 

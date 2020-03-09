@@ -122,7 +122,7 @@ class Levels(commands.Cog):
 
             users = await self.bot.db.fetch("SELECT * FROM levels WHERE guild_id=$1 ORDER BY xp DESC LIMIT 10", guild)
 
-            ranks = {(y := x + 1): f"#{y}" if y > 3 else f"{self.leaderboard_emojis[x]}" for x in range(10)}
+            ranks = {(y := x + 1): f"#{y}" if y > 3 else f"{self.leaderboard_emojis[y]}" for x in range(10)}
 
             fields = {"member": [], "level": [], "rank": []}
             for index, value in zip(range(10), users):

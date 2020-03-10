@@ -64,7 +64,11 @@ class Profile:
         pad_x, pad_y = (10, 20)
         bd_w, bd_h = (im_w - pad_x, im_h - pad_y)  # 890x280
         backdrop = self.round_rectangle((bd_w, bd_h), 20, fill=(22, 22, 22, 255))
-        im.paste(Image.open(f"backgrounds/{bg}.jpg") if bg != "default" else backdrop, (pad_x, pad_y), backdrop)
+        if bg != "default":
+            bg_img = Image.open(f"backgrounds/{bg}.jpg")
+            im.paste(bg_img, (pad_x, pad_y), backdrop)
+        else:
+            im.paste(backdrop, (pad_x, pad_y), backdrop)
 
         # Avatar
         circle = Image.open("images/circle.png")

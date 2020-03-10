@@ -31,9 +31,9 @@ def seconds_to_hms(seconds):
 
 class Profile:
     def __init__(self):
-        self.font = ImageFont.truetype("arialbd.ttf", 56)
-        self.medium_font = ImageFont.truetype("arialbd.ttf", 44)
-        self.small_font = ImageFont.truetype("arialbd.ttf", 32)
+        self.name_font = ImageFont.truetype("arialbd.ttf", 64)
+        self.level_font = ImageFont.truetype("arialbd.ttf", 48)
+        self.xp_font = ImageFont.truetype("arialbd.ttf", 32)
 
     def round_corner(self, radius, fill):
         corner = Image.new("RGBA", (radius, radius), (0, 0, 0, 0))
@@ -54,49 +54,44 @@ class Profile:
 
     def draw(self, user, lvl, xp, profile_bytes: BytesIO, color, bg):
         profile_bytes = Image.open(profile_bytes)
-        w, h = (256, 256)
-        profile_bytes = profile_bytes.resize((w, h))
+        profile_bytes = profile_bytes.resize((128, 128))
 
-        if bg != "default":
-            bg_img = False
-            for img in Path("backgrounds/").iterdir():
-                if img.name[:-4] == bg:
-                    bg_img = Image.open(f"backgrounds/{img.name}")
-            if bg_img:
-                im = ImageOps.fit(bg_img, (800, 296), centering=(0.0, 0.0))
-            else:
-                im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
-        else:
-            im = Image.new("RGBA", (800, 296), (44, 44, 44, 255))
-
+        im_w, im_h = (900, 300)
+        im = Image.new("RGBA", (im_w, im_h), color)
         im_draw = ImageDraw.Draw(im)
 
+        # Backdrop
+        pad_x, pad_y = (10, 20)
+        bd_w, bd_h = (im_w - pad_x, im_h - pad_y)  # 890x280
+        backdrop = self.round_rectangle((bd_w, bd_h), 20, fill=(22, 22, 22, 255))
+        im.paste(Image.open(f"backgrounds/{bg}") if bg != "default" else backdrop, (pad_x, pad_y), backdrop)
+
+        # Avatar
+        circle = Image.open("images/circle.png")
+        im.paste(profile_bytes, (pad_x + 20, pad_y + 76), circle)
+
         # User name
-        im_draw.text((350, 10), user, font=self.font, fill=color)
+        name_x, name_y = (pad_x + (im_w // 4), pad_y + (im_h // 4))
+        im_draw.text((name_x, name_y), user, font=self.name_font, fill=color)
 
         # Level
         lvl_text = f"LEVEL {lvl}"
-        im_draw.text((350, 74), lvl_text, font=self.medium_font, fill=(255, 255, 255, 255))
+        lvl_x, lvl_y = (name_x, name_y + 25)
+        im_draw.text((lvl_x, lvl_y), lvl_text, font=self.level_font, fill=(255, 255, 255, 255))
 
         # XP progress
         xp_text = f"{human_format(xp)} / {human_format(round((4 * (lvl ** 3) / 5)))} XP"
-        im_draw.text((350, 124), xp_text, font=self.small_font, fill=(255, 255, 255, 255))
+        xp_x, xp_y = (name_x + 25, name_y)
+        im_draw.text((xp_x, xp_y), xp_text, font=self.xp_font, fill=(255, 255, 255, 255))
 
         # XP progress bar
         progress = xp / round((4 * (lvl ** 3) / 5))
 
         img = self.round_rectangle((400, 60), 30, (64, 64, 64, 255))
-        im.paste(img, (350, 190), img)
+        im.paste(img, (name_x, name_y + 25), img)
 
         img2 = self.round_rectangle((int(400 * progress), 60), 30, color)
-        im.paste(img2, (350, 190), img2)
-
-        # Avatar border
-        im_draw.ellipse((28, 0, w + 40 + 28, h + 40), fill=color)
-
-        # Avatar
-        circle = Image.open("images/circle.png")
-        im.paste(profile_bytes, (48, 20), circle)
+        im.paste(img2, (name_x, name_y + 25), img2)
 
         buffer = BytesIO()
         im.save(buffer, "png")

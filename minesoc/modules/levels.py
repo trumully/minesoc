@@ -61,10 +61,10 @@ class Levels(commands.Cog):
                     async with session.get(f"{member.avatar_url}") as r:
                         profile_bytes = await r.read()
 
-                buffer = profile.draw(str(member.display_name), user["lvl"], user["xp"], BytesIO(profile_bytes),
+                buffer = profile.draw(str(member.name), user["lvl"], user["xp"], BytesIO(profile_bytes),
                                       discord.Color(user["color"]).to_rgb(), user["bg"])
 
-                await ctx.send(file=discord.File(fp=buffer, filename="rank_card.png"))
+                await ctx.send(file=discord.File(fp=buffer, filename="card.png"))
             else:
                 await ctx.send(f"**{ctx.author.name}**, "
                                f"{'this member has not' if member != ctx.author else 'you have not'} received XP yet.")
@@ -145,7 +145,7 @@ class Levels(commands.Cog):
             author = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2",
                                                 ctx.author.id, guild)
 
-            if author in users:
+            if author:
                 fields["rank"].append(ranks[users.index(author) + 1])
                 fields["member"].append(f"**{ctx.author.name}**")
                 xp = round((4 * (author['lvl'] ** 3) / 5))

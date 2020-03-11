@@ -5,25 +5,12 @@ import discord
 import asyncpg
 from discord.ext import commands
 
-LEVEL_COOLDOWN = 120
+CD = 120
 
 
 class Listeners(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    async def lvl_up(self, user):
-        cur_xp = user["xp"]
-        cur_lvl = user["lvl"]
-        author = user["user_id"]
-        guild = user["guild_id"]
-
-        if cur_xp >= round((4 * (cur_lvl ** 3) / 5)):
-            await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
-                                      user["lvl"] + 1, author, guild)
-            return True
-        else:
-            return False
 
     async def bot_check(self, ctx):
         if not ctx.guild:
@@ -39,47 +26,36 @@ class Listeners(commands.Cog):
     async def on_message(self, message):
         ctx = await self.bot.get_context(message)
 
-        guild = int(message.guild.id)
-        author = int(message.author.id)
+        guild = message.guild.id
+        author = message.author.id
 
-        config = await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM persistence WHERE guild=$1)", guild)
-
-        inventory = await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM inventory WHERE user_id=$1)", author)
-
-        if not config["exists"]:
-            await self.bot.db.execute("INSERT INTO persistence (guild, lvl_msg, lvls) VALUES ($1, TRUE, TRUE)", guild)
-            config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
-
-        if not inventory["exists"]:
-            await self.bot.db.execute("INSERT INTO inventory (user_id, items) VALUES ($1, ARRAY[]::int[])",
-                                      author)
+        await self.bot.db.execute("INSERT INTO persistence (guild, lvl_msg, lvls) VALUES ($1, TRUE, TRUE) "
+                                  "ON CONFLICT (guild) DO NOTHING", guild)
+        await self.bot.db.execute("INSERT INTO inventory (user_id, items) VALUES ($1, ARRAY[]::int[]) "
+                                  "ON CONFLICT (user_id) DO NOTHING", author)
 
         if message.author.bot or ctx.valid:
             return
 
-        do_lvl = config["lvls"]
-        do_msg = config["lvl_msg"]
+        config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
 
-        if do_lvl:
-
+        if config["lvls"]:
             xp = self.bot.xp_gain()
-
+            await self.bot.db.execute("INSERT INTO levels (user_id, guild_id, xp, lvl, cd, color, bg) "
+                                      "VALUES ($1, $2, $3, 1, $4, $5, 'default') "
+                                      "ON CONFLICT (user_id, guild_id) DO NOTHING",
+                                      author, guild, xp, time.time(), 0xFFFFFF)
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2", author, guild)
 
-            if not user:
-                await self.bot.db.execute("INSERT INTO levels (user_id, guild_id, xp, lvl, cd, color, bg) "
-                                          "VALUES ($1, $2, $3, 1, $4, $5, 'default')", author, guild, xp, time.time(),
-                                          0xFFFFFF)
-                user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2", author,
-                                                  guild)
-
-            if time.time() - user["cd"] >= LEVEL_COOLDOWN:
+            if time.time() - user["cd"] <= CD:
                 await self.bot.db.execute("UPDATE levels SET xp = $1, cd= $2 WHERE user_id = $3 AND guild_id = $4",
                                           user["xp"] + xp, time.time(), author, guild)
 
-            if await self.lvl_up(user):
-                if do_msg:
-                    await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
+                if user["xp"] + xp >= round((4 * (user["lvl"] ** 3) / 5)):
+                    await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
+                                              user["lvl"] + 1, author, guild)
+                    if config["lvl_msg"]:
+                        await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
@@ -129,7 +105,7 @@ class Listeners(commands.Cog):
     async def on_guild_join(self, guild):
         check = await self.bot.db.fetchrow("SELECT EXISTS(SELECT 1 FROM guild_blacklist WHERE id=$1)", guild.id)
 
-        if check[0]:
+        if check["exists"]:
             try:
                 embed = discord.Embed(color=self.bot.colors.red,
                                       description=f"Your guild / server tried to add me, but the ID is blacklisted. "

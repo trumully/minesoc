@@ -123,9 +123,9 @@ class Economy(commands.Cog):
         if item_to_buy:
             user = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", author.id)
             if (amount := user["amount"] - item_to_buy["price"]) >= 0:
-                if await self.bot.db.execute("UPDATE inventory SET items = items || ARRAY[$1]::int[] WHERE "
-                                             "user_id = $2 AND NOT EXISTS (SELECT * FROM inventory WHERE "
-                                             "$1 = ANY (items))", item_to_buy["id"], author.id) == "UPDATE 1":
+                if await self.bot.db.execute("UPDATE inventory SET items = items || $1 WHERE "
+                                             "user_id=$2 AND NOT EXISTS (SELECT * FROM inventory WHERE "
+                                             "$1=ANY (items))", item_to_buy["id"], author.id) == "UPDATE 1":
                     await self.bot.db.execute("UPDATE economy SET amount=$1 WHERE user_id=$2", amount, author.id)
                     await ctx.success(f"{author.name}, you purchased {item_to_buy['name']} for {item_to_buy['price']} "
                                       f"Credits!")

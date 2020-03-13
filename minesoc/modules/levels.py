@@ -61,13 +61,11 @@ class Levels(commands.Cog):
                     if config["lvl_msg"]:
                         await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
 
-    @commands.Cog.listener()
     async def cog_before_invoke(self, ctx):
         persistence = await self.bot.db.fetchrow("SELECT lvls FROM persistence WHERE guild=$1", ctx.guild.id)
         if not persistence["lvls"]:
             raise commands.DisabledCommand
 
-    @commands.Cog.listener()
     async def cog_command_error(self, ctx, error):
         if isinstance(error, commands.DisabledCommand):
             await ctx.error(description="The level system has been disabled for this guild.")

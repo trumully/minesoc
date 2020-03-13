@@ -4,10 +4,11 @@ import time
 import random
 import discord
 
+from datetime import datetime, timedelta
 from discord.ext import commands
 from libneko.aggregates import Proxy
 
-COOLDOWN = 120  # 2 minutes
+CD = 120  # 2 minutes
 STREAK_TIMER = 3600 * 44  # 44 hours
 STREAK_CD = 3600 * 24  # 24 hours
 
@@ -46,24 +47,20 @@ class Economy(commands.Cog):
         if message.author.bot or ctx.valid:
             return
 
-        check = await self.user_check(author)
-
         gain = self.gen_currency()
-
-        if check[0]:
-            result = await self.bot.db.fetchrow("SELECT * FROM economy WHERE user_id=$1", author)
-            if time.time() - result["cd"] >= COOLDOWN:
-                await self.bot.db.execute("UPDATE economy SET amount=$1, cd=$2 WHERE user_id=$3",
-                                          result["amount"] + gain, time.time(), author)
-        else:
-            await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time, streak_cd) "
-                                      "VALUES ($1, $2, $3, 0, 0, 0)", author, gain, time.time())
+        await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time, streak_cd) "
+                                  "VALUES ($1, $2, $3, 0, 0, 0) ON CONFLICT (user_id) DO NOTHING",
+                                  author, gain, time.time())
+        user = await self.bot.db.fetchrow("SELECT * FROM economy WHERE user_id=$1", author)
+        if time.time() - user["cd"] >= CD:
+            bal = user["amount"] + gain
+            await self.bot.db.execute("UPDATE economy SET amount=$1, cd=$2 WHERE user_id=$3", bal, time.time(), author)
 
     @commands.command()
     async def balance(self, ctx):
         check = await self.user_check(ctx.author.id)
 
-        if check[0]:
+        if check["exists"]:
             result = await self.bot.db.fetchrow("SELECT amount FROM economy WHERE user_id=$1", ctx.author.id)
             await ctx.send(f"💎 | **{ctx.author.name}**, you have **${result['amount']}** credits.")
         else:
@@ -75,11 +72,10 @@ class Economy(commands.Cog):
 
         check = await self.user_check(author)
 
-        if check[0]:
+        if check["exists"]:
             result = await self.bot.db.fetchrow("SELECT * FROM economy WHERE user_id=$1", author)
-            if (time_diff := time.time() - result["streak_cd"]) >= STREAK_CD:
-
-                if time.time() - result["streak_time"] >= STREAK_TIMER and result["streak_time"] > 0:
+            if (time_diff := time.time() - result["streak_cd"]) > STREAK_CD:
+                if time.time() - result["streak_time"] > STREAK_TIMER and result["streak_time"] > 0:
                     streak = 1
                 else:
                     streak = result["streak"] + 1
@@ -102,7 +98,6 @@ class Economy(commands.Cog):
         else:
             await self.bot.db.execute("INSERT INTO economy (user_id, amount, cd, streak, streak_time) "
                                       "VALUES ($1, $2, $3, 1, $4)", author, self.daily_gain, time.time(), time.time())
-
             msg = f"💸 | **{ctx.author.name}**, you got ${self.daily_gain} credits!\n\n**Streak: 1**"
 
         await ctx.send(msg)
@@ -136,6 +131,8 @@ class Economy(commands.Cog):
                                       f"Credits!")
                 else:
                     await ctx.send(f"**{ctx.author.name}**, you already own that!")
+            else:
+                await ctx.send(f"**{ctx.author.name}**, you cannot afford that item!")
         else:
             await ctx.send(f"**{author.name}**, that item does not exist! Make sure you typed the item name correctly.")
 

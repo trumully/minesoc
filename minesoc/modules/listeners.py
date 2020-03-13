@@ -1,11 +1,8 @@
 import asyncio
-import time
 
 import discord
 import asyncpg
 from discord.ext import commands
-
-CD = 120
 
 
 class Listeners(commands.Cog):
@@ -21,41 +18,6 @@ class Listeners(commands.Cog):
             return False
 
         return True
-
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        ctx = await self.bot.get_context(message)
-
-        guild = message.guild.id
-        author = message.author.id
-
-        await self.bot.db.execute("INSERT INTO persistence (guild, lvl_msg, lvls) VALUES ($1, TRUE, TRUE) "
-                                  "ON CONFLICT (guild) DO NOTHING", guild)
-        await self.bot.db.execute("INSERT INTO inventory (user_id, items) VALUES ($1, ARRAY[]::int[]) "
-                                  "ON CONFLICT (user_id) DO NOTHING", author)
-
-        if message.author.bot or ctx.valid:
-            return
-
-        config = await self.bot.db.fetchrow("SELECT * FROM persistence WHERE guild=$1", guild)
-
-        if config["lvls"]:
-            xp = self.bot.xp_gain()
-            await self.bot.db.execute("INSERT INTO levels (user_id, guild_id, xp, lvl, cd, color, bg) "
-                                      "VALUES ($1, $2, $3, 1, $4, $5, 'default') "
-                                      "ON CONFLICT (user_id, guild_id) DO NOTHING",
-                                      author, guild, xp, time.time(), 0xFFFFFF)
-            user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2", author, guild)
-
-            if time.time() - user["cd"] <= CD:
-                await self.bot.db.execute("UPDATE levels SET xp = $1, cd= $2 WHERE user_id = $3 AND guild_id = $4",
-                                          user["xp"] + xp, time.time(), author, guild)
-
-                if user["xp"] + xp >= round((4 * (user["lvl"] ** 3) / 5)):
-                    await self.bot.db.execute("UPDATE levels SET lvl = $1 WHERE user_id = $2 AND guild_id = $3",
-                                              user["lvl"] + 1, author, guild)
-                    if config["lvl_msg"]:
-                        await ctx.send(f"🆙 | **{message.author.name}** is now **Level {user['lvl'] + 1}**")
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):

@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS guild_blacklist(
 );
 
 CREATE TABLE IF NOT EXISTS economy(
-    user_id BIGINT,
+    user_id BIGINT UNIQUE,
     amount BIGINT,
     cd REAL,
     streak BIGINT,
@@ -25,6 +25,6 @@ CREATE TABLE IF NOT EXISTS items(
 );
 
 CREATE TABLE IF NOT EXISTS inventory(
-    user_id BIGINT,
-    items INTEGER[]
+    user_id BIGINT UNIQUE,
+    items INTEGER[] DEFAULT "{}"
 );

@@ -32,8 +32,8 @@ class Listeners(commands.Cog):
         await self.bot.db.execute("INSERT INTO persistence (guild, lvl_msg, lvls) "
                                   "VALUES ($1, TRUE, TRUE) "
                                   "ON CONFLICT (guild) DO NOTHING", guild)
-        await self.bot.db.execute("INSERT INTO inventory (user_id, items) "
-                                  "VALUES ($1, int[]) "
+        await self.bot.db.execute("INSERT INTO inventory (user_id) "
+                                  "VALUES ($1) "
                                   "ON CONFLICT (user_id) DO NOTHING", author)
 
         if message.author.bot or ctx.valid:

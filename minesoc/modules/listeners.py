@@ -44,8 +44,8 @@ class Listeners(commands.Cog):
             xp = self.bot.xp_gain()
             await self.bot.db.execute("INSERT INTO levels (user_id, guild_id, xp, lvl, cd, color, bg) "
                                       "VALUES ($1, $2, $3, 1, $4, $5, 'default') "
-                                      "ON CONFLICT (user_id, guild_id) "
-                                      "DO NOTHING", author, guild, xp, time.time(), 0xFFFFFF)
+                                      "WHERE NOT EXISTS (SELECT 1 FROM levels WHERE user_id=$1 AND guild_id=$2)",
+                                      author, guild, xp, time.time(), 0xFFFFFF)
             user = await self.bot.db.fetchrow("SELECT * FROM levels WHERE user_id=$1 AND guild_id=$2", author, guild)
 
             if time.time() - user["cd"] > CD:

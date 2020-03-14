@@ -141,6 +141,8 @@ class Corona:
                     stat = div.find("div", {"class": "maincounter-number"}).find("span").text
                     self.stats[title] = stat
 
+                self.embed = self.__generate_embed()
+
         def __generate_embed(self):
             embed = discord.Embed()
             for key, value in self.stats.items():

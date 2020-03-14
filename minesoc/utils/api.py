@@ -1,16 +1,17 @@
 import re
-
 import aiohttp
 import html
 import discord
 import random
 
+from bs4 import BeautifulSoup
 
 class API:
     def __init__(self, bot):
         self.session = aiohttp.ClientSession()
         self.animal = Animal(self.session)
         self.trivia = Trivia(self.session)
+        self.corona = Corona(self.session)
         self.bot = bot
 
 
@@ -127,3 +128,29 @@ class Animal:
             else:
                 embed = discord.Embed(color=discord.Color.red(), title="An error has occurred! Try again later.")
                 return self.CatResponse(response=None, error=embed)
+
+
+class Corona:
+    class CoronaResponse:
+        def __init__(self, response: BeautifulSoup):
+            if response:
+                self.stats = {}
+                for div in response.find_all("div", {"id": "maincounter-wrap"}):
+                    title = div.find("h1").contents
+                    stat = div.find("div", {"class": "maincounter-number"}).find("span").contents
+                    self.stats[title] = stat
+
+        def __generate_embed(self):
+            embed = discord.Embed()
+            for key, value in self.stats.items():
+                embed.add_field(name=key, value=value, inline=True)
+            return embed
+
+    def __init__(self, session: aiohttp.ClientSession):
+        self.session = session
+        self.url = "https://www.worldometers.info/coronavirus/"
+
+    async def get_response(self):
+        async with self.session.get(self.url) as response:
+            if response.status == 200:
+                return self.CoronaResponse(BeautifulSoup(await response.text()))

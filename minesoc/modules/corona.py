@@ -15,7 +15,7 @@ class Corona(commands.Cog):
         async with ctx.typing():
             embed = (await self.bot.api.corona.get_response()).embed
             embed.title = f"{self.bot.custom_emojis.virus} COVID-19 Information"
-            await ctx.send(embed)
+            await ctx.send(embed=embed)
 
 
 def setup(bot):

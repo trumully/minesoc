@@ -4,8 +4,6 @@ import html
 import discord
 import random
 
-from bs4 import BeautifulSoup
-
 
 class API:
     def __init__(self, bot):
@@ -133,27 +131,24 @@ class Animal:
 
 class Corona:
     class CoronaResponse:
-        def __init__(self, response: BeautifulSoup):
-            if response:
-                self.stats = {}
-                for div in response.find_all("div", {"id": "maincounter-wrap"}):
-                    title = div.find("h1").text
-                    stat = div.find("div", {"class": "maincounter-number"}).find("span").text
-                    self.stats[title] = stat
-
-                self.embed = self.__generate_embed()
+        def __init__(self, response):
+            self._info = response
+            self.stats = self._info["latest"]
+            self.embed = self.__generate_embed()
 
         def __generate_embed(self):
             embed = discord.Embed()
-            for key, value in self.stats.items():
-                embed.add_field(name=key, value=value, inline=True)
+            embed.add_field(name="Confirmed", value=self.stats["confirmed"])
+            embed.add_field(name="Deaths", value=self.stats["deaths"])
+            embed.add_field(name="Recovered", value=self.stats["recovered"])
+
             return embed
 
     def __init__(self, session: aiohttp.ClientSession):
         self.session = session
-        self.url = "https://www.worldometers.info/coronavirus/"
+        self.url = "https://coronavirus-tracker-api.herokuapp.com/all"
 
-    async def get_response(self):
+    async def fetch_data(self):
         async with self.session.get(self.url) as response:
             if response.status == 200:
-                return self.CoronaResponse(BeautifulSoup(await response.text()))
+                return self.CoronaResponse(await response.json())

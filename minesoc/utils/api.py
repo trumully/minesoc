@@ -6,6 +6,7 @@ import random
 
 from bs4 import BeautifulSoup
 
+
 class API:
     def __init__(self, bot):
         self.session = aiohttp.ClientSession()
@@ -136,8 +137,8 @@ class Corona:
             if response:
                 self.stats = {}
                 for div in response.find_all("div", {"id": "maincounter-wrap"}):
-                    title = div.find("h1").contents
-                    stat = div.find("div", {"class": "maincounter-number"}).find("span").contents
+                    title = div.find("h1").text
+                    stat = div.find("div", {"class": "maincounter-number"}).find("span").text
                     self.stats[title] = stat
 
         def __generate_embed(self):

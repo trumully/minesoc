@@ -190,8 +190,9 @@ class Corona:
             if response.status == 200:
                 result = await response.json()
                 if location:
-                    for i in result["locations"]:
-                        if location.title() == i["country"] or location == i["country_code"]:
+                    for i, j in enumerate(result["locations"]):
+                        if location.title() == result["locations"][i]["country"] or \
+                                location.upper() == result["locations"][i]["country_code"]:
                             result["type"] = f"country/{data}"
                             return self.CoronaResponse(result["locations"][i])
                     else:

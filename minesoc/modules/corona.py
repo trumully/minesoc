@@ -11,7 +11,7 @@ class Corona(commands.Cog):
 
     @commands.group()
     async def corona(self, ctx):
-        if ctx.invoked_subcommands is None:
+        if ctx.invoked_subcommand is None:
             async with ctx.typing():
                 await ctx.send(embed=(await self.bot.api.corona.fetch_data(data="all")).embed)
 

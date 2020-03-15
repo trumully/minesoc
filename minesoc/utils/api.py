@@ -161,8 +161,10 @@ class Corona:
                     embed.title = f"{flag} Confirmed cases of COVID-19 in {self._info['country'].title()}"
                 else:
                     embed.title = f"{flag} Deaths due to COVID-19 in {self._info['country'].title()}"
-                self.series = self.__generate_time_series(self._info["history"])
-                self.series.plot()
+                dates = [pd.to_datetime(i) for i in self._info["history"].keys()]
+                values = self._info["history"].values()
+                self.series = pd.DataFrame({"values": values, "dates": dates})
+                self.series.plot(kind="line", x="dates", y="values")
                 buffer = BytesIO()
                 plt.savefig(buffer, format="png")
                 buffer.seek(0)
@@ -170,12 +172,6 @@ class Corona:
                 embed.set_image(url="attachment://graph.png")
 
             return embed
-
-        def __generate_time_series(self, data):
-            dates = [pd.to_datetime(i) for i in data.keys()]
-            values = data.values()
-            data_frame = pd.DataFrame({"values": values, "dates": dates})
-            return data_frame
 
     def __init__(self, session: aiohttp.ClientSession):
         self.session = session

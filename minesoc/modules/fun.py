@@ -75,10 +75,10 @@ class Fun(commands.Cog):
         """Having trouble making a decision? I'll make it for you!"""
         await ctx.send(f"I choose: {choice(options)}")
 
-    @commands.command(name="8ball")
+    @commands.command(name="conch")
     async def _8ball(self, ctx, *, query):
         """Let the Magic 8 Ball decide your fate."""
-        await ctx.send(f"> {query}\n🎱 {choice(_8ball)}")
+        await ctx.send(f"> {query}\n🐚 {choice(_8ball)}")
 
     @commands.command()
     @commands.cooldown(1, 30, commands.BucketType.user)

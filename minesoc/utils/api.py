@@ -155,9 +155,9 @@ class Corona:
                 embed.add_field(name="Recovered", value=self.stats["recovered"], inline=True)
             else:
                 flag = f":flag_{self._info['country_code'].lower()}:"
-                if "recovered" in self._info["type"]:
+                if self.data == "recovered":
                     embed.title = f"{flag} COVID-19 recoveries in {self._info['country'].title()}"
-                elif "confirmed" in self._info["type"]:
+                elif self.data == "confirmed":
                     embed.title = f"{flag} Confirmed cases of COVID-19 in {self._info['country'].title()}"
                 else:
                     embed.title = f"{flag} Deaths due to COVID-19 in {self._info['country'].title()}"

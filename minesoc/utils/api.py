@@ -137,9 +137,10 @@ class Animal:
 
 class Corona:
     class CoronaResponse:
-        def __init__(self, response):
+        def __init__(self, response, data):
             if response:
                 self._info = response
+                self.data = data
                 self.stats = self._info["latest"]
                 self.embed = self.__generate_embed()
             else:
@@ -147,7 +148,7 @@ class Corona:
 
         def __generate_embed(self):
             embed = discord.Embed()
-            if self._info["type"] == "all":
+            if self.data == "all":
                 embed.title = "🌐 Global COVID-19 Information"
                 embed.add_field(name="Confirmed", value=self.stats["confirmed"], inline=True)
                 embed.add_field(name="Deaths", value=self.stats["deaths"], inline=True)
@@ -193,12 +194,11 @@ class Corona:
                     for i, j in enumerate(result["locations"]):
                         if location.title() == result["locations"][i]["country"] or \
                                 location.upper() == result["locations"][i]["country_code"]:
-                            result["type"] = f"country/{data}"
-                            return self.CoronaResponse(result["locations"][i])
+                            return self.CoronaResponse(result["locations"][i], data=data)
                     else:
                         return False
                 else:
                     result["type"] = "all"
-                    return self.CoronaResponse(result)
+                    return self.CoronaResponse(result, data=data)
             else:
                 return False

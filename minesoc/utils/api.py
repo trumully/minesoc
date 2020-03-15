@@ -193,7 +193,7 @@ class Corona:
                     for i in result["locations"]:
                         if location.title() == i["country"] or location == i["country_code"]:
                             result["type"] = f"country/{data}"
-                            return self.CoronaResponse(result)
+                            return self.CoronaResponse(result["locations"][i])
                     else:
                         return False
                 else:

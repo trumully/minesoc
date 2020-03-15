@@ -174,7 +174,6 @@ class Corona:
             return embed
 
         def __generate_time_series(self, data):
-            data = json.loads(data)
             dates = [pd.to_datetime(i) for i in data.keys()]
             values = data.values()
             data_frame = pd.DataFrame({"dates": dates, "values": values})

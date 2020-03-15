@@ -161,10 +161,13 @@ class Corona:
                     embed.title = f"{flag} Confirmed cases of COVID-19 in {self._info['country'].title()}"
                 else:
                     embed.title = f"{flag} Deaths due to COVID-19 in {self._info['country'].title()}"
-                dates = [pd.to_datetime(i) for i in self._info["history"].keys()]
-                values = self._info["history"].values()
-                self.series = pd.DataFrame({"values": values, "dates": dates})
-                self.series.plot(kind="line", x="dates", y="values")
+                data = {"date": [i for i in self._info["history"].keys()],
+                        "values": [i for i in self._info["history"].values()]}
+                self.df = pd.DataFrame(data, columns=["date", "values"])
+                self.df["date"] = pd.to_datetime(self.df["date"])
+                self.df.index = self.df["date"]
+                del self.df["date"]
+                self.df.resample("D").sum().plot()
                 buffer = BytesIO()
                 plt.savefig(buffer, format="png")
                 buffer.seek(0)

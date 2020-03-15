@@ -3,6 +3,12 @@ import aiohttp
 import html
 import discord
 import random
+import json
+import pandas as pd
+
+from matplotlib import pyplot as plt
+from io import StringIO, BytesIO
+from PIL import Image
 
 
 class API:
@@ -132,23 +138,66 @@ class Animal:
 class Corona:
     class CoronaResponse:
         def __init__(self, response):
-            self._info = response
-            self.stats = self._info["latest"]
-            self.embed = self.__generate_embed()
+            if response:
+                self._info = response
+                self.stats = self._info["latest"]
+                self.embed = self.__generate_embed()
+            else:
+                self.embed = discord.Embed(color=discord.Color.red(), title="An error occurred.")
 
         def __generate_embed(self):
             embed = discord.Embed()
-            embed.add_field(name="Confirmed", value=self.stats["confirmed"])
-            embed.add_field(name="Deaths", value=self.stats["deaths"])
-            embed.add_field(name="Recovered", value=self.stats["recovered"])
+            if self._info["type"] == "all":
+                embed.title = "🌐 Global COVID-19 Information"
+                embed.add_field(name="Confirmed", value=self._info["confirmed"])
+                embed.add_field(name="Deaths", value=self._info["deaths"])
+                embed.add_field(name="Recovered", value=self._info["recovered"])
+            else:
+                flag = f":flag_{self._info['country_code'].lower()}:"
+                if "recovered" in self._info["type"]:
+                    embed.title = f"{flag} COVID-19 recoveries in {self._info['country'].title()}"
+                elif "confirmed" in self._info["type"]:
+                    embed.title = f"{flag} Confirmed cases of COVID-19 in {self._info['country'].title()}"
+                else:
+                    embed.title = f"{flag} Deaths due to COVID-19 in {self._info['country'].title()}"
+                self.csv = self.__generate_time_series(self._info["history"])
+                self.series = pd.read_csv(self.csv, header=0, index_col=0, parse_dates=True, squeeze=True)
+                self.series.plot()
+                buffer = BytesIO()
+                plt.savefig(buffer, format="png")
+                buffer.seek(0)
+
+                self.file = discord.File(fp=buffer, filename="graph.png")
+                embed.set_image(url="attachment://graph.png")
 
             return embed
 
+        def __generate_time_series(self, data):
+            data = json.loads(data)
+            dates = [pd.to_datetime(i) for i in data.keys()]
+            values = data.values()
+            data_frame = pd.DataFrame({"dates": dates, "values": values})
+            text_stream = StringIO()
+            data_frame.to_csv(text_stream)
+            return text_stream.getvalue()
+
     def __init__(self, session: aiohttp.ClientSession):
         self.session = session
-        self.url = "https://coronavirus-tracker-api.herokuapp.com/all"
+        self.url = "https://coronavirus-tracker-api.herokuapp.com"
 
-    async def fetch_data(self):
-        async with self.session.get(self.url) as response:
+    async def fetch_data(self, data, location: str = False):
+        async with self.session.get(f"{self.url}/{data}") as response:
             if response.status == 200:
-                return self.CoronaResponse(await response.json())
+                result = await response.json()
+                if location:
+                    for i in result["locations"]:
+                        if location.title() == i["country"] or location == i["country_code"]:
+                            result["type"] = f"country/{data}"
+                            return self.CoronaResponse(result)
+                    else:
+                        return False
+                else:
+                    result["type"] = "all"
+                    return self.CoronaResponse(result)
+            else:
+                return False

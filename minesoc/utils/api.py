@@ -149,9 +149,9 @@ class Corona:
             embed = discord.Embed()
             if self._info["type"] == "all":
                 embed.title = "🌐 Global COVID-19 Information"
-                embed.add_field(name="Confirmed", value=self._info["confirmed"])
-                embed.add_field(name="Deaths", value=self._info["deaths"])
-                embed.add_field(name="Recovered", value=self._info["recovered"])
+                embed.add_field(name="Confirmed", value=self.stats["confirmed"], inline=True)
+                embed.add_field(name="Deaths", value=self.stats["deaths"], inline=True)
+                embed.add_field(name="Recovered", value=self.stats["recovered"], inline=True)
             else:
                 flag = f":flag_{self._info['country_code'].lower()}:"
                 if "recovered" in self._info["type"]:

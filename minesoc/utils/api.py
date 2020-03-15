@@ -174,7 +174,7 @@ class Corona:
         def __generate_time_series(self, data):
             dates = [pd.to_datetime(i) for i in data.keys()]
             values = data.values()
-            data_frame = pd.DataFrame({"dates": dates, "values": values})
+            data_frame = pd.DataFrame({"values": values, "dates": dates})
             return data_frame
 
     def __init__(self, session: aiohttp.ClientSession):

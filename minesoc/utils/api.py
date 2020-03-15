@@ -161,13 +161,11 @@ class Corona:
                     embed.title = f"{flag} Confirmed cases of COVID-19 in {self._info['country'].title()}"
                 else:
                     embed.title = f"{flag} Deaths due to COVID-19 in {self._info['country'].title()}"
-                self.csv = self.__generate_time_series(self._info["history"])
-                self.series = pd.read_csv(self.csv, header=0, index_col=0, parse_dates=True, squeeze=True)
+                self.series = self.__generate_time_series(self._info["history"])
                 self.series.plot()
                 buffer = BytesIO()
                 plt.savefig(buffer, format="png")
                 buffer.seek(0)
-
                 self.file = discord.File(fp=buffer, filename="graph.png")
                 embed.set_image(url="attachment://graph.png")
 
@@ -177,9 +175,7 @@ class Corona:
             dates = [pd.to_datetime(i) for i in data.keys()]
             values = data.values()
             data_frame = pd.DataFrame({"dates": dates, "values": values})
-            text_stream = StringIO()
-            data_frame.to_csv(text_stream)
-            return text_stream.getvalue()
+            return data_frame
 
     def __init__(self, session: aiohttp.ClientSession):
         self.session = session

@@ -18,17 +18,20 @@ class Corona(commands.Cog):
     @corona.command(name="recovered")
     async def corona_recovered(self, ctx, country):
         async with ctx.typing():
-            await ctx.send(embed=(await self.bot.api.corona.fetch_data(data="recovered", location=country)).embed)
+            result = await self.bot.api.corona.fetch_data(data="recovered", location=country)
+            await ctx.send(embed=result.embed, file=result.file)
 
     @corona.command(name="deaths")
     async def corona_deaths(self, ctx, country):
         async with ctx.typing():
-            await ctx.send(embed=(await self.bot.api.corona.fetch_data(data="deaths", location=country)).embed)
+            result = await self.bot.api.corona.fetch_data(data="deaths", location=country)
+            await ctx.send(embed=result.embed, file=result.file)
 
     @corona.command(name="confirmed")
     async def corona_confirmed(self, ctx, country):
         async with ctx.typing():
-            await ctx.send(embed=(await self.bot.api.corona.fetch_data(data="confirmed", location=country)).embed)
+            result = await self.bot.api.corona.fetch_data(data="confirmed", location=country)
+            await ctx.send(embed=result.embed, file=result.file)
 
 
 def setup(bot):

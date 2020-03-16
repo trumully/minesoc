@@ -155,12 +155,12 @@ class Corona:
                 embed.add_field(name="Recovered", value=self.stats["recovered"], inline=True)
             else:
                 flag = f":flag_{self._info['country_code'].lower()}:"
-                if self.data == "recovered":
-                    embed.title = f"{flag} COVID-19 recoveries in {self._info['country'].title()}"
-                elif self.data == "confirmed":
-                    embed.title = f"{flag} Confirmed cases of COVID-19 in {self._info['country'].title()}"
-                else:
-                    embed.title = f"{flag} Deaths due to COVID-19 in {self._info['country'].title()}"
+                string = "deaths" if self.data == "deaths" else "recovered" if self.data == "recovered" else \
+                    "confirmations"
+                title = f"COVID-19 {string} in {self._info['country'].title()}"
+                embed.title = f"{flag} {title}"
+                embed.add_field(name="Latest", value=self._info["latest"])
+
                 data = {"date": [i for i in self._info["history"].keys()],
                         "values": [i for i in self._info["history"].values()]}
                 self.df = pd.DataFrame(data, columns=["date", "values"])
@@ -169,7 +169,9 @@ class Corona:
                 del self.df["date"]
                 self.df.resample("D").sum().plot()
                 buffer = BytesIO()
-                plt.savefig(buffer, format="png")
+                fig = plt.figure()
+                fig.suptitle(title, fontsize=16)
+                fig.savefig(buffer, format="png")
                 buffer.seek(0)
                 self.file = discord.File(fp=buffer, filename="graph.png")
                 embed.set_image(url="attachment://graph.png")

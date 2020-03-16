@@ -169,9 +169,8 @@ class Corona:
                 del self.df["date"]
                 self.df.resample("D").sum().plot()
                 buffer = BytesIO()
-                fig = plt.figure()
-                fig.suptitle(title, fontsize=16)
-                fig.savefig(buffer, format="png")
+                plt.suptitle(title, fontsize=16)
+                plt.savefig(buffer, format="png")
                 buffer.seek(0)
                 self.file = discord.File(fp=buffer, filename="graph.png")
                 embed.set_image(url="attachment://graph.png")

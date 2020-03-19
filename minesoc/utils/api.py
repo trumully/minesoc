@@ -138,7 +138,7 @@ class Animal:
 class Corona:
     class CoronaResponse:
         def __init__(self, response, data):
-            if response:
+            if response is not False:
                 self._info = response
                 self.data = data
                 self.stats = self._info["latest"]
@@ -191,9 +191,9 @@ class Corona:
                                 location.upper() == result["locations"][i]["country_code"]:
                             return self.CoronaResponse(result["locations"][i], data=data)
                     else:
-                        return False
+                        return self.CoronaResponse(False, data=None)
                 else:
                     result["type"] = "all"
                     return self.CoronaResponse(result, data=data)
             else:
-                return False
+                return self.CoronaResponse(False, data=None)

@@ -8,6 +8,7 @@ import pandas as pd
 
 from matplotlib import pyplot as plt
 from io import StringIO, BytesIO
+from datetime import datetime
 from PIL import Image
 
 
@@ -16,7 +17,7 @@ class API:
         self.session = aiohttp.ClientSession()
         self.animal = Animal(self.session)
         self.trivia = Trivia(self.session)
-        self.corona = Corona(self.session)
+        self.corona = Covid(self.session)
         self.bot = bot
 
 
@@ -135,65 +136,74 @@ class Animal:
                 return self.CatResponse(response=None, error=embed)
 
 
-class Corona:
-    class CoronaResponse:
-        def __init__(self, response, data):
+class Covid:
+    class CovidResponse:
+        def __init__(self, response, data_type):
             if response is not False:
                 self._info = response
-                self.data = data
-                self.stats = self._info["latest"]
-                self.embed = self.__generate_embed()
+                self.data_type = data_type
+                self.stats = self._info.get("latest", None)
+                if self._info is None:
+                    self.embed = discord.Embed(color=discord.Color.red(), title="An error occurred.")
+                else:
+                    self.embed = self.__generate_embed()
             else:
                 self.embed = discord.Embed(color=discord.Color.red(), title="An error occurred.")
 
+        def __generate_graph(self):
+            embed = discord.Embed()
+            flag = f":flag_{self._info['country_code'].lower()}:"
+            title = f"COVID-19 data for {self._info['country'].title()}"
+            embed.title = f"{flag} {title}"
+            embed.add_field(name="Latest", value=self._info["latest"])
+
+            data = {"date": [i for i in self._info["history"].keys()],
+                    "values": [i for i in self._info["history"].values()]}
+            self.df = pd.DataFrame(data, columns=["date", "values"])
+            self.df["date"] = pd.to_datetime(self.df["date"])
+            self.df.index = self.df["date"]
+            del self.df["date"]
+            self.df.resample("D").sum().plot()
+            buffer = BytesIO()
+            plt.suptitle(title, fontsize=16)
+            plt.savefig(buffer, format="png")
+            buffer.seek(0)
+            self.file = discord.File(fp=buffer, filename="graph.png")
+            embed.set_image(url="attachment://graph.png")
+
         def __generate_embed(self):
             embed = discord.Embed()
-            if self.data == "all":
+            if self.data_type == "latest":
                 embed.title = "🌐 Global COVID-19 Information"
-                embed.add_field(name="Confirmed", value=self.stats["confirmed"], inline=True)
-                embed.add_field(name="Deaths", value=self.stats["deaths"], inline=True)
-                embed.add_field(name="Recovered", value=self.stats["recovered"], inline=True)
             else:
-                flag = f":flag_{self._info['country_code'].lower()}:"
-                string = "deaths" if self.data == "deaths" else "recovered" if self.data == "recovered" else \
-                    "confirmations"
-                title = f"COVID-19 {string} in {self._info['country'].title()}"
-                embed.title = f"{flag} {title}"
-                embed.add_field(name="Latest", value=self._info["latest"])
-
-                data = {"date": [i for i in self._info["history"].keys()],
-                        "values": [i for i in self._info["history"].values()]}
-                self.df = pd.DataFrame(data, columns=["date", "values"])
-                self.df["date"] = pd.to_datetime(self.df["date"])
-                self.df.index = self.df["date"]
-                del self.df["date"]
-                self.df.resample("D").sum().plot()
-                buffer = BytesIO()
-                plt.suptitle(title, fontsize=16)
-                plt.savefig(buffer, format="png")
-                buffer.seek(0)
-                self.file = discord.File(fp=buffer, filename="graph.png")
-                embed.set_image(url="attachment://graph.png")
+                country = self._info["locations"][0]
+                flag = f":flag_{country['country_code'].lower()}:"
+                embed.title = f"{flag} COVID-19 data for {country['country'].title()}"
+                date_string = country["last_updated"]
+                date_string.replace("Z", "+00:00")
+                date = datetime.fromisoformat(date_string).strftime("%c")
+                embed.set_footer(text=f"Last updated: {date}")
+            embed.add_field(name="Confirmed", value=self.stats["confirmed"], inline=True)
+            embed.add_field(name="Deaths", value=self.stats["deaths"], inline=True)
+            embed.add_field(name="Recovered", value=self.stats["recovered"], inline=True)
 
             return embed
 
     def __init__(self, session: aiohttp.ClientSession):
         self.session = session
-        self.url = "https://coronavirus-tracker-api.herokuapp.com"
+        self.url = "https://coronavirus-tracker-api.herokuapp.com/v2"
 
-    async def fetch_data(self, data, location: str = False):
-        async with self.session.get(f"{self.url}/{data}") as response:
+    async def fetch_country(self, q):
+        url = f"{self.url}/locations?country={q}" if len(q) > 2 else f"{self.url}/locations?country_code={q}"
+        async with self.session.get(url) as response:
             if response.status == 200:
-                result = await response.json()
-                if location:
-                    for i, j in enumerate(result["locations"]):
-                        if location.title() == result["locations"][i]["country"] or \
-                                location.upper() == result["locations"][i]["country_code"]:
-                            return self.CoronaResponse(result["locations"][i], data=data)
-                    else:
-                        return self.CoronaResponse(False, data=None)
-                else:
-                    result["type"] = "all"
-                    return self.CoronaResponse(result, data=data)
+                response = await response.json()
+                return self.CovidResponse(response=response, data_type="country")
+
+    async def fetch_latest(self):
+        async with self.session.get(f"{self.url}/latest") as response:
+            if response.status == 200:
+                response = await response.json()
+                return self.CovidResponse(response=response, data_type="latest")
             else:
-                return self.CoronaResponse(False, data=None)
+                return self.CovidResponse(response=False, data_type=None)

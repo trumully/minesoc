@@ -78,26 +78,12 @@ class Levels(commands.Cog):
     async def profile_background(self, ctx, bg: str = None):
         """Changes the background image of your rank card. Change image to "default" to reset your background image."""
         bg = bg.lower() if bg is not None else bg
-
-        user = await self.bot.db.fetchrow("SELECT * FROM inventory WHERE user_id=$1", ctx.author.id)
-        bgs = await self.bot.db.fetch("SELECT * FROM items WHERE type=0")
-
-        inventory = user["items"]
-        owned_bgs = [j["name"] for i in inventory for j in bgs if i == j["id"]]
         available_bgs = [file.name[:-4] for file in (self.bot.path / "backgrounds").iterdir() if file.name[:-4]]
-
-        if bg is None or bg not in available_bgs and bg not in owned_bgs and bg != "default":
-            owned_bgs = "\n".join(f"[+] {i.title()}" for i in owned_bgs)
-            if not owned_bgs:
-                return await ctx.send(f"**{ctx.author.name}**, you don't own any backgrounds!")
-            embed = discord.Embed(title="Available Backgrounds", description=f"```\n{owned_bgs}```")
-            embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
-            return await ctx.send(embed=embed)
 
         member = ctx.author.id
         guild = ctx.guild.id
 
-        if bg in owned_bgs:
+        if bg in available_bgs:
             await self.bot.db.execute("UPDATE levels SET bg = $1 WHERE user_id = $2 AND guild_id = $3",
                                       bg, member, guild)
             embed = discord.Embed()

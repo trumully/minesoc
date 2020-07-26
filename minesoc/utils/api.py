@@ -1,15 +1,6 @@
 import re
 import aiohttp
-import html
 import discord
-import random
-import json
-import pandas as pd
-
-from matplotlib import pyplot as plt
-from io import StringIO, BytesIO
-from datetime import datetime
-from PIL import Image
 
 
 class API:

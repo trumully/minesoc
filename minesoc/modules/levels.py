@@ -90,7 +90,7 @@ class Levels(commands.Cog):
             embed.title = f"Changed your image to `{bg}`" if bg != "default" else "Reset your profile background."
             await ctx.send(embed=embed)
         else:
-            await ctx.send("You do not own that background!")
+            await ctx.send(f"```{', '.join(available_bgs)}```")
 
     @commands.command(pass_context=True, aliases=["lb", "ranks", "levels"])
     async def leaderboard(self, ctx):

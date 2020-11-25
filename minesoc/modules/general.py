@@ -128,7 +128,7 @@ class General(commands.Cog):
                                end)
             file = discord.File(fp=buffer, filename="spotify.png")
             embed.set_image(url="attachment://spotify.png")
-        else:
+        elif member.activity:
             embed.add_field(name=f"Activity",
                             value=f"{member.activity.type.name.title()}"
                                   f"{' to' if member.activity.type.name == 'listening' else ''} "
@@ -160,25 +160,26 @@ class General(commands.Cog):
             return
 
         async with ctx.typing():
-            for activity in user.activities:
-                if isinstance(activity, discord.Spotify):
-                    card = images.SpotifyImage()
+            if user.activities:
+                for activity in user.activities:
+                    if isinstance(activity, discord.Spotify):
+                        card = images.SpotifyImage()
 
-                    album_bytes = await card.fetch_cover(activity.album_cover_url)
-                    color = activity.color.to_rgb()
+                        album_bytes = await card.fetch_cover(activity.album_cover_url)
+                        color = activity.color.to_rgb()
 
-                    end = activity.end
-                    duration = activity.duration
-                    buffer = card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), duration, end)
-                    url = f"<https://open.spotify.com/track/{activity.track_id}>"
-                    await ctx.message.delete()
-                    embed = discord.Embed(
-                        description=f"{self.bot.custom_emojis.spotify} {user.mention} is listening to:\n**{url}**",
-                        color=activity.color)
-                    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar_url)
-                    file = discord.File(fp=buffer, filename="spotify.png")
-                    embed.set_image(url="attachment://spotify.png")
-                    return await ctx.send(embed=embed, file=file)
+                        end = activity.end
+                        duration = activity.duration
+                        buffer = card.draw(activity.title, activity.artists, color, BytesIO(album_bytes), duration, end)
+                        url = f"<https://open.spotify.com/track/{activity.track_id}>"
+                        await ctx.message.delete()
+                        embed = discord.Embed(
+                            description=f"{self.bot.custom_emojis.spotify} {user.mention} is listening to:\n**{url}**",
+                            color=activity.color)
+                        embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar_url)
+                        file = discord.File(fp=buffer, filename="spotify.png")
+                        embed.set_image(url="attachment://spotify.png")
+                        return await ctx.send(embed=embed, file=file)
 
         embed = discord.Embed(color=self.bot.colors.spotify)
         embed.description = f"{self.bot.custom_emojis.spotify} " \
